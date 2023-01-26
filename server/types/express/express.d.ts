@@ -15,7 +15,8 @@ declare global {
             // DB_CONNECTION_STRING_TESTING: string;
 
             DB_NAME: string;
-            DB_USERS_COLLECTION: string;
+            DB_USERNAME: string;
+            DB_PASSWORD: string;
             DB_CONNECTION_STRING: string;
             
             // LOCAL_MONGODB_CONNECTION_STRING: string;

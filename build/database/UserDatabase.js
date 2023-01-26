@@ -22,9 +22,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
+const mysql_1 = __importDefault(require("mysql"));
 /**
  * UserDatabase is responsible for providing an interface for the end-user filled with methods which allows
  * CRUD operations on the User collection.
@@ -34,8 +38,35 @@ dotenv.config();
  */
 class UserDatabase {
     static instance;
-    constructor(mongoURL, databaseName, collectionName) {
-        throw new Error("Method not implemented.");
+    mysqlConnection;
+    constructor(mysqlHost, databaseName, username, password) {
+        let mysqlConnection = mysql_1.default.createConnection({
+            host: mysqlHost,
+            database: databaseName,
+            user: username,
+            password: password
+        });
+        mysqlConnection.connect();
+        this.mysqlConnection = mysqlConnection;
+    }
+    /**
+     * Retrieves current instance of the UserDatabase if such exists.
+     *
+     * @returns UserDatabase object or undefined.
+     */
+    static getInstance() {
+        return UserDatabase.instance;
+    }
+    /**
+     * Connects to the database if database instance doesn't exist.
+     *
+     * @returns UserDatabase object.
+     */
+    static connect(mysqlHost, databaseName, username, password) {
+        if (UserDatabase.instance === undefined) {
+            UserDatabase.instance = new UserDatabase(mysqlHost, databaseName, username, password);
+        }
+        return UserDatabase.instance;
     }
     GetAll(parameters) {
         throw new Error('Method not implemented.');
@@ -51,25 +82,6 @@ class UserDatabase {
     }
     Delete(id) {
         throw new Error('Method not implemented.');
-    }
-    /**
-     * Retrieves current instance of the UserDatabase if such exists.
-     *
-     * @returns UserDatabase object or undefined.
-     */
-    static getInstance() {
-        return UserDatabase.instance;
-    }
-    /**
-     * Connects to the database if database instance doesn't exist.
-     *
-     * @returns UserDatabase object.
-     */
-    static connect(mongoURL, name, collection) {
-        if (UserDatabase.instance === undefined) {
-            UserDatabase.instance = new UserDatabase(mongoURL, name, collection);
-        }
-        return UserDatabase.instance;
     }
 }
 exports.default = UserDatabase;

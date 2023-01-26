@@ -3,6 +3,8 @@ dotenv.config();
 
 import { exit } from 'process';
 
+import mysql from 'mysql';
+
 import IUser from '../serverAPI/model/internal/user/IUser';
 import IDatabase from './IDatabase';
 
@@ -16,27 +18,24 @@ import IDatabase from './IDatabase';
 export default class UserDatabase implements IDatabase<IUser> {
     private static instance?: UserDatabase;
 
+    private mysqlConnection: mysql.Connection;
+
     private constructor(
-        mongoURL: string,
+        mysqlHost: string,
         databaseName: string,
-        collectionName: string,
+        username: string,
+        password: string
     ) {
-        throw new Error("Method not implemented.");
-    }
-    GetAll(parameters?: Map<String, any> | undefined): Promise<IUser[] | null> {
-        throw new Error('Method not implemented.');
-    }
-    Get(parameters: Map<String, any>): Promise<IUser | null> {
-        throw new Error('Method not implemented.');
-    }
-    Create(object: IUser): Promise<IUser | null> {
-        throw new Error('Method not implemented.');
-    }
-    Update(id: string, object: IUser): Promise<IUser | null> {
-        throw new Error('Method not implemented.');
-    }
-    Delete(id: string): Promise<boolean> {
-        throw new Error('Method not implemented.');
+        let mysqlConnection = mysql.createConnection({
+            host: mysqlHost,
+            database: databaseName,
+            user: username,
+            password: password
+        });
+
+        mysqlConnection.connect();
+
+        this.mysqlConnection = mysqlConnection;
     }
 
     /**
@@ -54,14 +53,35 @@ export default class UserDatabase implements IDatabase<IUser> {
      * @returns UserDatabase object.
      */
     static connect(
-        mongoURL: string,
-        name: string,
-        collection: string,
+        mysqlHost: string,
+        databaseName: string,
+        username: string,
+        password: string
     ): UserDatabase {
         if (UserDatabase.instance === undefined) {
-            UserDatabase.instance = new UserDatabase(mongoURL, name, collection);
+            UserDatabase.instance = new UserDatabase(mysqlHost, databaseName, username, password);
         }
 
         return UserDatabase.instance;
+    }
+
+    GetAll(parameters?: Map<String, any> | undefined): Promise<IUser[] | null> {
+        throw new Error('Method not implemented.');
+    }
+
+    Get(parameters: Map<String, any>): Promise<IUser | null> {
+        throw new Error('Method not implemented.');
+    }
+    
+    Create(object: IUser): Promise<IUser | null> {
+        throw new Error('Method not implemented.');
+    }
+    
+    Update(id: string, object: IUser): Promise<IUser | null> {
+        throw new Error('Method not implemented.');
+    }
+    
+    Delete(id: string): Promise<boolean> {
+        throw new Error('Method not implemented.');
     }
 }

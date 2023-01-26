@@ -17,14 +17,17 @@ export const authenticationRoute = express.Router();
 
 let databaseURL = process.env.DB_CONNECTION_STRING;
 let databaseName = process.env.DB_NAME;
-let collectionName = process.env.DB_USERS_COLLECTION;
+let username = process.env.DB_USERNAME;
+let password = process.env.DB_PASSWORD;
+
 let privateKey = process.env.PRIVATE_KEY_FOR_USER_TOKEN;
 
 const authenticationController = new AuthenticationController(
     UserDatabase.connect(
         databaseURL,
         databaseName,
-        collectionName
+        username,
+        password
     ),
     new Encryptor(),
     new TokenCreator(privateKey)
