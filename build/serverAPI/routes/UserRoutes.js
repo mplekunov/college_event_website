@@ -1,4 +1,7 @@
 "use strict";
+/**
+ * This file is responsible for construction of the routes for UserController.
+ */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -26,38 +29,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.server = exports.app = void 0;
+exports.userRoute = void 0;
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
-// process.env.DB_CONNECTION_STRING = process.env.NODE_ENV === "dev" ?
-if (process.env.NODE_ENV.length <= 0) {
-    console.log(`Server cannot be run without NODE_ENV variable set.`);
-    (0, process_1.exit)(1);
-}
-console.log(`Server is in ${process.env.NODE_ENV} mode.`);
 const express_1 = __importDefault(require("express"));
-const process_1 = require("process");
-const Logger_1 = __importDefault(require("./serverAPI/middleware/logger/Logger"));
-const UserRoutes_1 = require("./serverAPI/routes/UserRoutes");
-const AuthenticationRoutes_1 = require("./serverAPI/routes/AuthenticationRoutes");
-// import { ingredientRoute } from './serverAPI/routes/IngredientRoute';
-// import { recipeRoute } from './serverAPI/routes/RecipeRoute';
-const app = (0, express_1.default)();
-exports.app = app;
-app.use(Logger_1.default.consoleLog);
-const cors = require("cors");
-var corsOptions = {
-    origin: true
-};
-app.use(cors(corsOptions));
-app.use('/user', UserRoutes_1.userRoute);
-// app.use('/recipes', recipeRoute)
-// app.use('/ingredients', ingredientRoute);
-app.use('/auth', AuthenticationRoutes_1.authenticationRoute);
-const server = (port) => {
-    app.listen(port, () => {
-        console.log(`🚀 Server is running on port ${port}`);
-    });
-};
-exports.server = server;
-//# sourceMappingURL=Main.js.map
+const UserController_1 = __importDefault(require("../controller/UserController"));
+const JWTAuthenticator_1 = __importDefault(require("../middleware/authentication/JWTAuthenticator"));
+const TokenCreator_1 = __importDefault(require("../../utils/TokenCreator"));
+const UserDatabase_1 = __importDefault(require("../../database/UserDatabase"));
+exports.userRoute = express_1.default.Router();
+let databaseURL = process.env.DB_CONNECTION_STRING;
+let databaseName = process.env.DB_NAME;
+let collectionName = process.env.DB_USERS_COLLECTION;
+let freeImageHostApiKey = process.env.FREE_IMAGE_HOST_API_KEY;
+let privateKey = process.env.PRIVATE_KEY_FOR_USER_TOKEN;
+const database = UserDatabase_1.default.connect(databaseURL, databaseName, collectionName);
+const userController = new UserController_1.default(database);
+exports.userRoute.use(new JWTAuthenticator_1.default().authenticate(new TokenCreator_1.default(privateKey)));
+exports.userRoute.use(express_1.default.json({ limit: '30mb' }));
+exports.userRoute.route('/')
+    .get(userController.get)
+    .delete(userController.delete);
+//# sourceMappingURL=UserRoutes.js.map
