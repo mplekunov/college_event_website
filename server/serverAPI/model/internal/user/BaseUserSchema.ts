@@ -4,6 +4,9 @@ import Schema from "../../Schema";
 
 import IBaseUser from "./IBaseUser";
 import ICredentials from "./ICredentials";
+import IAffiliate from "../affiliate/IAffiliate";
+import IMember from "../member/IMember";
+import IBaseUniversity from "../university/IBaseUniversity";
 
 export default class BaseUserSchema extends Schema implements IBaseUser, ICredentials {
     @IsString()
@@ -32,6 +35,8 @@ export default class BaseUserSchema extends Schema implements IBaseUser, ICreden
 
     userLevel: UserLevel;
 
+    universityAffiliation: IAffiliate<IBaseUniversity, IMember<UniversityMemberType>>;
+
     constructor(
         firstName: string,
         lastName: string,
@@ -39,7 +44,8 @@ export default class BaseUserSchema extends Schema implements IBaseUser, ICreden
         password: string,
         email: string,
         userLevel: UserLevel,
-        lastSeen: number
+        lastSeen: number,
+        universityAffiliation: IAffiliate<IBaseUniversity, IMember<UniversityMemberType>>
     ) {
         super();
         
@@ -50,5 +56,6 @@ export default class BaseUserSchema extends Schema implements IBaseUser, ICreden
         this.lastSeen = lastSeen;
         this.email = email;
         this.userLevel = userLevel;
+        this.universityAffiliation = universityAffiliation;
     }
 }

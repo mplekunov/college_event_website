@@ -1,0 +1,4 @@
+enum RSOMemberType {
+    MEMBER,
+    ADMIN
+}

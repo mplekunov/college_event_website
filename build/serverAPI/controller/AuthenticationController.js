@@ -5,13 +5,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const ResponseCodes_1 = require("../../utils/ResponseCodes");
 const Token_1 = __importDefault(require("../model/internal/token/Token"));
-const UserSchema_1 = __importDefault(require("../model/internal/user/UserSchema"));
 const LoginRequest_1 = __importDefault(require("../model/external/request/authentication/LoginRequest"));
 const RefreshJWTRequest_1 = __importDefault(require("../model/external/request/authentication/RefreshJWTRequest"));
 const RegisterRequest_1 = __importDefault(require("../model/external/request/authentication/RegisterRequest"));
 const BaseUserController_1 = __importDefault(require("./base/BaseUserController"));
 const JWTStorage_1 = __importDefault(require("../middleware/authentication/JWTStorage"));
 const UserToken_1 = __importDefault(require("../model/internal/userToken/UserToken"));
+const BaseUserSchema_1 = __importDefault(require("../model/internal/user/BaseUserSchema"));
 /**
  * This class creates several properties responsible for authentication actions
  * provided to the user.
@@ -19,13 +19,8 @@ const UserToken_1 = __importDefault(require("../model/internal/userToken/UserTok
 class AuthenticationController extends BaseUserController_1.default {
     encryptor;
     tokenCreator;
-    static verificationCodesMap = new Map();
-    verificationCodeLifetimeInMilliseconds = 5 * 60 * 1000;
-    maxAttemptsPerVerificationCode = 3;
     accessTokenTimeoutInSeconds = 24 * 60 * 60;
     refreshTokenTimeoutInSeconds = 24 * 60 * 60;
-    minVerificationCode = 100000;
-    maxVerificationCode = 999999;
     constructor(database, encryptor, tokenCreator) {
         super(database);
         this.encryptor = encryptor;
@@ -37,7 +32,7 @@ class AuthenticationController extends BaseUserController_1.default {
         ;
     }
     parseRegisterRequest(req, res) {
-        let request = new RegisterRequest_1.default(req.body?.firstName, req.body?.lastName, req.body?.username, req.body?.password, req.body?.email, UserLevel.STUDENT);
+        let request = new RegisterRequest_1.default(req.body?.firstName, req.body?.lastName, req.body?.username, req.body?.password, req.body?.email, UserLevel.STUDENT, req.body?.universityAffiliation);
         return this.verifySchema(request, res);
     }
     parseRefreshJWTRequest(req, res) {
@@ -72,9 +67,6 @@ class AuthenticationController extends BaseUserController_1.default {
         if (!result) {
             return this.send(ResponseCodes_1.ResponseCodes.UNAUTHORIZED, res, `User credentials are incorrect.`);
         }
-        if (!user.isVerified) {
-            return this.send(ResponseCodes_1.ResponseCodes.FORBIDDEN, res, "Account is not verified.");
-        }
         let token = this.createToken({ username: user.username });
         if (req.query.includeInfo === 'true') {
             return this.send(ResponseCodes_1.ResponseCodes.OK, res, {
@@ -91,9 +83,6 @@ class AuthenticationController extends BaseUserController_1.default {
         }
         return this.send(ResponseCodes_1.ResponseCodes.OK, res, token);
     };
-    convertToMinutes(timeInMilliseconds) {
-        return Math.ceil(timeInMilliseconds / 1000 / 60);
-    }
     /**
      * Refreshes client's JWT tokens when correct refresh token is provided.
      *
@@ -156,7 +145,7 @@ class AuthenticationController extends BaseUserController_1.default {
         if (emailExists) {
             return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, `User with such email already exists.`);
         }
-        let internalUser = new UserSchema_1.default(parsedRequest.firstName, parsedRequest.lastName, parsedRequest.username, parsedRequest.password, parsedRequest.email, UserLevel.STUDENT, parsedRequest.lastSeen);
+        let internalUser = new BaseUserSchema_1.default(parsedRequest.firstName, parsedRequest.lastName, parsedRequest.username, parsedRequest.password, parsedRequest.email, UserLevel.STUDENT, parsedRequest.lastSeen, parsedRequest.universityAffiliation);
         internalUser.password = await this.encryptor.encrypt(internalUser.password);
         let createdUser = await this.database.Create(internalUser);
         if (createdUser === null) {

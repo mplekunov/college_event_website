@@ -1,3 +1,7 @@
+import IAffiliate from "../affiliate/IAffiliate";
+import IMember from "../member/IMember";
+import IBaseUniversity from "../university/IBaseUniversity";
+
 export default interface IBaseUser {
     /**
      * User's first name.
@@ -18,4 +22,6 @@ export default interface IBaseUser {
      * The User's level of access
      */
     userLevel: UserLevel;
+
+    universityAffiliation: IAffiliate<IBaseUniversity, IMember<UniversityMemberType>>;
 }

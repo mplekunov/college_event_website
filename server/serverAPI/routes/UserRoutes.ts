@@ -24,8 +24,6 @@ let databaseName = process.env.DB_NAME;
 let username = process.env.DB_USERNAME;
 let password = process.env.DB_PASSWORD;
 
-let freeImageHostApiKey = process.env.FREE_IMAGE_HOST_API_KEY;
-
 let privateKey = process.env.PRIVATE_KEY_FOR_USER_TOKEN;
 
 const database = UserDatabase.connect(

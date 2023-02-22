@@ -1,6 +1,8 @@
+import IBaseUser from "../../serverAPI/model/internal/user/IBaseUser";
+
 declare module "express-serve-static-core" {
     interface Request {
-        serverUser: IIdentification;
+        serverUser: IBaseUser;
     }
 }
 

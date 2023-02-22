@@ -18,7 +18,8 @@ class BaseUserController extends BaseController_1.default {
             lastName: user.lastName,
             lastSeen: user.lastSeen,
             email: user.email,
-            userLevel: user.userLevel
+            userLevel: user.userLevel,
+            universityAffiliation: user.universityAffiliation,
         };
     }
     async usernameExists(username, res) {

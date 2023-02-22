@@ -8,11 +8,12 @@ import IUser from "../../model/internal/user/IUser";
 import IUserResponse from "../../model/external/response/user/IUserResponse";
 
 import BaseController from "./BaseController";
+import IBaseUser from "../../model/internal/user/IBaseUser";
 
 export default class BaseUserController extends BaseController {
-    protected database: IDatabase<IUser>;
+    protected database: IDatabase<IBaseUser, IUser>;
 
-    constructor(database: IDatabase<IUser>) {
+    constructor(database: IDatabase<IBaseUser, IUser>) {
         super();
         this.database = database;
     }
@@ -24,7 +25,8 @@ export default class BaseUserController extends BaseController {
             lastName: user.lastName,
             lastSeen: user.lastSeen,
             email: user.email,
-            userLevel: user.userLevel
+            userLevel: user.userLevel,
+            universityAffiliation: user.universityAffiliation,
         }
     }
 

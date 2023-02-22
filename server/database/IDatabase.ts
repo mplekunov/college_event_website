@@ -1,7 +1,7 @@
 /**
  * Database interface describing full CRUD operations of the object with generic type T.
  */
-export default interface IDatabase<Type> {
+export default interface IDatabase<BaseType, Type> {
     /**
       * Retrieves general information about all T objects stored in the database. 
       * 
@@ -33,7 +33,7 @@ export default interface IDatabase<Type> {
       * @throws IncorrectSchema exception when T object doesn't have correct format.
       * @returns Promise filled with T object or null if T object wasn't created.
       */    
-     Create(object: Type): Promise<Type| null>;
+     Create(object: BaseType): Promise<Type| null>;
  
      /**
       * Updates T object in the database

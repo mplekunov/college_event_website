@@ -42,7 +42,6 @@ let databaseURL = process.env.DB_CONNECTION_STRING;
 let databaseName = process.env.DB_NAME;
 let username = process.env.DB_USERNAME;
 let password = process.env.DB_PASSWORD;
-let freeImageHostApiKey = process.env.FREE_IMAGE_HOST_API_KEY;
 let privateKey = process.env.PRIVATE_KEY_FOR_USER_TOKEN;
 const database = UserDatabase_1.default.connect(databaseURL, databaseName, username, password);
 const userController = new UserController_1.default(database);

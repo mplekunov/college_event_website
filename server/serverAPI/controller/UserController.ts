@@ -9,13 +9,14 @@ import IDatabase from '../../database/IDatabase';
 import IUser from "../model/internal/user/IUser";
 
 import BaseUserController from "./base/BaseUserController";
+import IBaseUser from "../model/internal/user/IBaseUser";
 
 /**
  * This class creates several properties responsible for user-actions 
  * provided to the user.
  */
 export default class UserController extends BaseUserController {
-    constructor(database: IDatabase<IUser>) {
+    constructor(database: IDatabase<IBaseUser, IUser>) {
         super(database);
     }
 
@@ -26,7 +27,7 @@ export default class UserController extends BaseUserController {
      * @param res Response parameter that holds information about response.
      */
     get = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["username", req.serverUser.username]]);
+        let parameters = new Map<string, any>([["username", req.serverUser]]);
 
         return this.requestGet(parameters, res).then(user => {
             return this.send(ResponseCodes.OK, res, this.convertToUserResponse(user));

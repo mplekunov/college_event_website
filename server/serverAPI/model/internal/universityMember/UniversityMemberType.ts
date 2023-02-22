@@ -1,0 +1,4 @@
+enum UniversityMemberType {
+    STUDENT,
+    STAFF
+}

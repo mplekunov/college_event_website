@@ -3,11 +3,8 @@ import { ResponseCodes } from "../../utils/ResponseCodes";
 
 import Encryptor from "../../utils/Encryptor";
 import TokenCreator from "../../utils/TokenCreator";
-import Random from "../../utils/Random";
 
 import Token from "../model/internal/token/Token";
-
-import UserSchema from "../model/internal/user/UserSchema";
 
 import LoginRequestSchema from "../model/external/request/authentication/LoginRequest";
 import RefreshJWTRequestSchema from "../model/external/request/authentication/RefreshJWTRequest";
@@ -21,6 +18,8 @@ import BaseUserController from "./base/BaseUserController";
 
 import JWTStorage from "../middleware/authentication/JWTStorage";
 import UserToken from "../model/internal/userToken/UserToken";
+import IBaseUser from "../model/internal/user/IBaseUser";
+import BaseUserSchema from "../model/internal/user/BaseUserSchema";
 
 /**
  * This class creates several properties responsible for authentication actions 
@@ -30,18 +29,11 @@ export default class AuthenticationController extends BaseUserController {
     private encryptor: Encryptor;
     private tokenCreator: TokenCreator<IIdentification>;
 
-    protected static verificationCodesMap: Map<string, { code: number, generationTime: number, attempts: number }> = new Map();
-    protected verificationCodeLifetimeInMilliseconds = 5 * 60 * 1000;
-    protected maxAttemptsPerVerificationCode = 3;
-
     protected accessTokenTimeoutInSeconds = 24 * 60 * 60;
     protected refreshTokenTimeoutInSeconds = 24 * 60 * 60;
 
-    protected minVerificationCode = 100000;
-    protected maxVerificationCode = 999999;
-
     constructor(
-        database: IDatabase<IUser>,
+        database: IDatabase<IBaseUser, IUser>,
         encryptor: Encryptor,
         tokenCreator: TokenCreator<IIdentification>
     ) {
@@ -68,7 +60,8 @@ export default class AuthenticationController extends BaseUserController {
             req.body?.username,
             req.body?.password,
             req.body?.email,
-            UserLevel.STUDENT
+            UserLevel.STUDENT,
+            req.body?.universityAffiliation
         );
 
         return this.verifySchema(request, res);
@@ -122,10 +115,6 @@ export default class AuthenticationController extends BaseUserController {
             return this.send(ResponseCodes.UNAUTHORIZED, res, `User credentials are incorrect.`);
         }
 
-        if (!user.isVerified) {
-            return this.send(ResponseCodes.FORBIDDEN, res, "Account is not verified.");
-        }
-
         let token = this.createToken({ username: user.username });
 
         if (req.query.includeInfo === 'true') {
@@ -144,10 +133,6 @@ export default class AuthenticationController extends BaseUserController {
         }
 
         return this.send(ResponseCodes.OK, res, token);
-    }
-
-    private convertToMinutes(timeInMilliseconds: number): number {
-        return Math.ceil(timeInMilliseconds / 1000 / 60)
     }
 
     /**
@@ -217,14 +202,15 @@ export default class AuthenticationController extends BaseUserController {
             return this.send(ResponseCodes.BAD_REQUEST, res, `User with such email already exists.`);
         }
 
-        let internalUser = new UserSchema(
+        let internalUser = new BaseUserSchema(
             parsedRequest.firstName,
             parsedRequest.lastName,
             parsedRequest.username,
             parsedRequest.password,
             parsedRequest.email,
             UserLevel.STUDENT,
-            parsedRequest.lastSeen
+            parsedRequest.lastSeen,
+            parsedRequest.universityAffiliation
         );
 
         internalUser.password = await this.encryptor.encrypt(internalUser.password);

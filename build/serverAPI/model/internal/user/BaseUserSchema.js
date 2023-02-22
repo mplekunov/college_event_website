@@ -19,7 +19,8 @@ class BaseUserSchema extends Schema_1.default {
     lastSeen;
     email;
     userLevel;
-    constructor(firstName, lastName, username, password, email, userLevel, lastSeen) {
+    universityAffiliation;
+    constructor(firstName, lastName, username, password, email, userLevel, lastSeen, universityAffiliation) {
         super();
         this.firstName = firstName;
         this.lastName = lastName;
@@ -28,6 +29,7 @@ class BaseUserSchema extends Schema_1.default {
         this.lastSeen = lastSeen;
         this.email = email;
         this.userLevel = userLevel;
+        this.universityAffiliation = universityAffiliation;
     }
 }
 __decorate([
