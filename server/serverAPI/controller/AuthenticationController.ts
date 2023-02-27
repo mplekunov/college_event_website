@@ -8,7 +8,7 @@ import Token from "../model/internal/token/Token";
 
 import LoginRequestSchema from "../model/external/request/authentication/LoginRequest";
 import RefreshJWTRequestSchema from "../model/external/request/authentication/RefreshJWTRequest";
-import RegisterRequestSchema from "../model/external/request/authentication/RegisterRequest";
+import UserRegisterRequestSchema from "../model/external/request/authentication/UserRegisterRequest";
 
 import IDatabase from "../../database/IDatabase";
 import IIdentification from "../model/internal/user/IIdentification";
@@ -53,8 +53,8 @@ export default class AuthenticationController extends BaseUserController {
     }
 
 
-    protected parseRegisterRequest(req: Request, res: Response): Promise<RegisterRequestSchema> {
-        let request = new RegisterRequestSchema(
+    protected parseRegisterRequest(req: Request, res: Response): Promise<UserRegisterRequestSchema> {
+        let request = new UserRegisterRequestSchema(
             req.body?.firstName,
             req.body?.lastName,
             req.body?.username,
@@ -182,7 +182,7 @@ export default class AuthenticationController extends BaseUserController {
      * @param res Response parameter that holds information about response.
      */
     register = async (req: Request, res: Response) => {
-        let parsedRequest: RegisterRequestSchema;
+        let parsedRequest: UserRegisterRequestSchema;
         let userExists: boolean;
         let emailExists: boolean;
 

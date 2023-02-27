@@ -1,5 +1,7 @@
+import { ObjectId } from "bson";
+
 export default interface IMember<T> {
     userID: number;
-    organizationID: number;
+    organizationID: ObjectId;
     memberType: T;
 }

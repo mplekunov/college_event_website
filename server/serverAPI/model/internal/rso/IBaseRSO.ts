@@ -1,5 +1,7 @@
+import { ObjectId } from "bson";
+
 export default interface IBaseRSO {
-    rsoID: number;
+    rsoID: ObjectId;
     name: string;
     description: string;
 }

@@ -3,7 +3,7 @@ import IMember from "../../../internal/member/IMember";
 import IBaseUniversity from "../../../internal/university/IBaseUniversity";
 import BaseUserSchema from "../../../internal/user/BaseUserSchema";
 
-export default class RegisterRequestSchema extends BaseUserSchema {
+export default class UserRegisterRequestSchema extends BaseUserSchema {
     constructor(
         firstName: string,
         lastName: string,

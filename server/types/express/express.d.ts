@@ -1,8 +1,8 @@
-import IBaseUser from "../../serverAPI/model/internal/user/IBaseUser";
+import IUser from "../../serverAPI/model/internal/user/IUser";
 
 declare module "express-serve-static-core" {
     interface Request {
-        serverUser: IBaseUser;
+        serverUser: IUser;
     }
 }
 

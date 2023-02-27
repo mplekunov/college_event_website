@@ -1,17 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
+
+import IDatabase from '../../../database/IDatabase';
+
 import { ResponseCodes } from '../../../utils/ResponseCodes';
 
 import TokenCreator from '../../../utils/TokenCreator';
 
-import BaseController from '../../controller/base/BaseController';
+import BaseUserController from '../../controller/base/BaseUserController';
+import IBaseUser from '../../model/internal/user/IBaseUser';
 
 import IIdentification from '../../model/internal/user/IIdentification';
+import IUser from '../../model/internal/user/IUser';
 
 import JWTStorage from './JWTStorage';
 
-export default class JWTAuthenticator extends BaseController {
+export default class JWTAuthenticator extends BaseUserController {
+    constructor(database: IDatabase<IBaseUser, IUser>) {
+        super(database);
+    }
+
     authenticate = (tokenCreator: TokenCreator<IIdentification>) =>
-        (req: Request, res: Response, next: NextFunction) => {
+        async (req: Request, res: Response, next: NextFunction) => {
             if (!req.headers.authorization) {
                 return this.send(ResponseCodes.UNAUTHORIZED, res, "Token is invalid.");
             }
@@ -35,7 +44,15 @@ export default class JWTAuthenticator extends BaseController {
                 return this.send(ResponseCodes.UNAUTHORIZED, res, "Token is not assigned to the user.");
             }
 
-            req.serverUser = userIdentification;
+            let user: IUser;
+            try {
+                user = await this.requestGet(new Map<string, string>([["username", userIdentification.username]]), res);
+            } catch (response) {
+                return response;
+            }
+
+            req.serverUser = user;
+            
             next();
         }
 }
