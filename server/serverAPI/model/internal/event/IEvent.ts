@@ -1,12 +1,7 @@
-import ILocation from "../location/ILocation";
+import IComment from "../../external/comment/IComment";
+import IBaseEvent from "./IBaseEvent";
 
-export default interface IEvent {
-    name: string;
-    category: string;
-    description: string;
-    eventType: EventType;
-    date: Date;
-    location: ILocation;
-    email: string;
-    phone: string;
+export default interface IEvent extends IBaseEvent {
+    rating: number;
+    comments: Array<IComment>;
 }

@@ -18,6 +18,6 @@ export default class RSORegisterRequestSchema extends RSOSchema {
             organizationID: rsoID
         }));
 
-        super(name, description, rsoID, [], internalMembers);
+        super(name, description, rsoID, internalMembers);
     }
 }
