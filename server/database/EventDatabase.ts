@@ -1,13 +1,12 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import { exit } from 'process';
-
 import mysql from 'mysql';
 
 import IUser from '../serverAPI/model/internal/user/IUser';
 import IDatabase from './IDatabase';
-import IBaseUser from '../serverAPI/model/internal/user/IBaseUser';
+import IBaseEvent from '../serverAPI/model/internal/event/IBaseEvent';
+import IEvent from '../serverAPI/model/internal/event/IEvent';
 
 /**
  * UserDatabase is responsible for providing an interface for the end-user filled with methods which allows
@@ -16,8 +15,8 @@ import IBaseUser from '../serverAPI/model/internal/user/IBaseUser';
  * It also uses Singleton design pattern. As such, there is only one database instance that will be created through out
  * execution lifetime.
  */
-export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
-    private static instance?: UserDatabase;
+export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
+    private static instance?: EventDatabase;
 
     private mysqlConnection: mysql.Connection;
 
@@ -44,8 +43,8 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
      * 
      * @returns UserDatabase object or undefined.
      */
-    static getInstance(): UserDatabase | undefined {
-        return UserDatabase.instance;
+    static getInstance(): EventDatabase | undefined {
+        return this.instance;
     }
 
     /**
@@ -58,27 +57,27 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
         databaseName: string,
         username: string,
         password: string
-    ): UserDatabase {
-        if (UserDatabase.instance === undefined) {
-            UserDatabase.instance = new UserDatabase(mysqlHost, databaseName, username, password);
+    ): EventDatabase {
+        if (this.instance === undefined) {
+            this.instance = new EventDatabase(mysqlHost, databaseName, username, password);
         }
 
-        return UserDatabase.instance;
+        return this.instance;
     }
 
-    GetAll(parameters?: Map<String, any> | undefined): Promise<IUser[] | null> {
+    GetAll(parameters?: Map<String, any> | undefined): Promise<IEvent[] | null> {
         throw new Error('Method not implemented.');
     }
 
-    Get(parameters: Map<String, any>): Promise<IUser | null> {
+    Get(parameters: Map<String, any>): Promise<IEvent | null> {
         throw new Error('Method not implemented.');
     }
     
-    Create(object: IUser): Promise<IUser | null> {
+    Create(object: IBaseEvent): Promise<IEvent | null> {
         throw new Error('Method not implemented.');
     }
     
-    Update(id: string, object: IUser): Promise<IUser | null> {
+    Update(id: string, object: IEvent): Promise<IEvent | null> {
         throw new Error('Method not implemented.');
     }
     
