@@ -62,7 +62,7 @@ export default class EventController extends BaseEventController {
      * @param res Response parameter that holds information about response.
      */
     get = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["eventID", req.body?.eventID]]);
+        let parameters = new Map<string, any>([["eventID", req.params.eventID]]);
 
         try {
             let event = await this.requestGet(parameters, res);
@@ -94,7 +94,7 @@ export default class EventController extends BaseEventController {
      * @param res Response parameter that holds information about response.
      */
     delete = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["eventID", req.body?.eventID]]);
+        let parameters = new Map<string, any>([["eventID", req.params.eventID]]);
         let studentID = req.body?.studentID;
 
         try {

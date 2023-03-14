@@ -39,7 +39,7 @@ export default class CommentController extends BaseController {
      * @param res Response parameter that holds information about response.
      */
     getAll = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["eventID", req.body?.eventID]]);
+        let parameters = new Map<string, any>([["eventID", req.params.eventID]]);
 
         return this.eventController.requestGet(parameters, res).then(event => {
             return this.send(ResponseCodes.OK, res, event.comments);
@@ -53,12 +53,12 @@ export default class CommentController extends BaseController {
      * @param res Response parameter that holds information about response.
      */
     get = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["eventID", req.body?.eventID]]);
-        let commentID = req.body?.commentID;
+        let parameters = new Map<string, any>([["eventID", req.params.eventID]]);
+        let commentID = req.params.commentID;
 
         try {
             let event = await this.eventController.requestGet(parameters, res);
-            let comment = event.comments.find(comment => comment.commentID == commentID);
+            let comment = event.comments.find(comment => comment.commentID.toString() == commentID);
 
             return this.send(ResponseCodes.OK, res, comment);
         } catch (response) {
@@ -68,7 +68,7 @@ export default class CommentController extends BaseController {
 
     add = async (req: Request, res: Response) => {
         let commentCreationSchema: IComment;
-        let eventID = req.body?.eventID;
+        let eventID = req.params.eventID;
 
         try {
             commentCreationSchema = await this.parseAddRequest(req, res);
@@ -91,13 +91,13 @@ export default class CommentController extends BaseController {
      * @param res Response parameter that holds information about response.
      */
     delete = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["eventID", req.body?.eventID]]);
-        let commentID = req.body?.commentID;
+        let parameters = new Map<string, any>([["eventID", req.params.eventID]]);
+        let commentID = req.params.commentID;
 
         try {
             let event = await this.eventController.requestGet(parameters, res);
 
-            event.comments = event.comments.filter(comment => comment.commentID != commentID);
+            event.comments = event.comments.filter(comment => comment.commentID.toString() != commentID);
 
             await this.eventController.requestUpdate(event.eventID.toString(), event, res);
 

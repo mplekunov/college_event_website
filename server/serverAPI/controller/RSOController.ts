@@ -59,7 +59,7 @@ export default class RSOController extends BaseRSOController {
      * @param res Response parameter that holds information about response.
      */
     get = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["rsoID", req.body?.rsoID]]);
+        let parameters = new Map<string, any>([["rsoID", req.params.rsoID]]);
 
         try {
             let rso = await this.requestGet(parameters, res);
@@ -135,7 +135,7 @@ export default class RSOController extends BaseRSOController {
      * @param res Response parameter that holds information about response.
      */
     enter = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["rsoID", req.body?.rsoID]]);
+        let parameters = new Map<string, any>([["rsoID", req.params.rsoID]]);
 
         try {
             let rso = await this.requestGet(parameters, res);
@@ -167,7 +167,7 @@ export default class RSOController extends BaseRSOController {
      * @param res Response parameter that holds information about response.
      */
     leave = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["rsoID", req.body?.rsoID]]);
+        let parameters = new Map<string, any>([["rsoID", req.params.rsoID]]);
 
         try {
             let rso = await this.requestGet(parameters, res);
@@ -201,7 +201,7 @@ export default class RSOController extends BaseRSOController {
      * @param res Response parameter that holds information about response.
      */
     delete = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["rsoID", req.body?.rsoID]]);
+        let parameters = new Map<string, any>([["rsoID", req.params.rsoID]]);
 
         try {
             let rso = await this.requestGet(parameters, res);
