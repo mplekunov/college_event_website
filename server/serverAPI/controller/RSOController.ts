@@ -12,8 +12,6 @@ import IBaseRSO from "../model/internal/rso/IBaseRSO";
 import RSORegisterRequestSchema from "../model/external/request/rso/RSORegisterRequest";
 
 import bson, { ObjectId } from 'bson';
-import IBaseUser from "../model/internal/user/IBaseUser";
-import IUser from "../model/internal/user/IUser";
 import BaseUserController from "./base/BaseUserController";
 
 /**
@@ -84,7 +82,7 @@ export default class RSOController extends BaseRSOController {
         }
     }
 
-    createRSO = async (req: Request, res: Response) => {
+    add = async (req: Request, res: Response) => {
         let rsoRegisterSchema: RSORegisterRequestSchema;
 
         try {
@@ -136,7 +134,7 @@ export default class RSOController extends BaseRSOController {
      * @param req Request parameter that holds information about request.
      * @param res Response parameter that holds information about response.
      */
-    enterRSO = async (req: Request, res: Response) => {
+    enter = async (req: Request, res: Response) => {
         let parameters = new Map<string, any>([["rsoID", req.body?.rsoID]]);
 
         try {
@@ -168,7 +166,7 @@ export default class RSOController extends BaseRSOController {
      * @param req Request parameter that holds information about request.
      * @param res Response parameter that holds information about response.
      */
-    leaveRSO = async (req: Request, res: Response) => {
+    leave = async (req: Request, res: Response) => {
         let parameters = new Map<string, any>([["rsoID", req.body?.rsoID]]);
 
         try {

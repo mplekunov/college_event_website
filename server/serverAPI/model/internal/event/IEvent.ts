@@ -1,4 +1,4 @@
-import IComment from "../../external/comment/IComment";
+import IComment from "../comment/IComment";
 import IBaseEvent from "./IBaseEvent";
 
 export default interface IEvent extends IBaseEvent {

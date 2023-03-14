@@ -22,18 +22,20 @@ let password = process.env.DB_PASSWORD;
 
 let privateKey = process.env.PRIVATE_KEY_FOR_USER_TOKEN;
 
+const userDatabase = UserDatabase.connect(
+    databaseURL,
+    databaseName,
+    username,
+    password
+);
+
 const authenticationController = new AuthenticationController(
-    UserDatabase.connect(
-        databaseURL,
-        databaseName,
-        username,
-        password
-    ),
+    userDatabase,
     new Encryptor(),
     new TokenCreator(privateKey)
 );
 
-const authenticator = new JWTAuthenticator().authenticate(new TokenCreator(privateKey));
+const authenticator = new JWTAuthenticator(userDatabase).authenticate(new TokenCreator(privateKey));
 
 authenticationRoute.use(express.json({ limit: '30mb' }));
 

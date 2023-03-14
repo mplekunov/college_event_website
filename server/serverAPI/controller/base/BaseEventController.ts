@@ -5,7 +5,6 @@ import { ResponseCodes } from "../../../utils/ResponseCodes";
 import IDatabase from "../../../database/IDatabase";
 
 import BaseController from "./BaseController";
-import IRSO from "../../model/internal/rso/IRSO";
 import IBaseEvent from "../../model/internal/event/IBaseEvent";
 import IEvent from "../../model/internal/event/IEvent";
 

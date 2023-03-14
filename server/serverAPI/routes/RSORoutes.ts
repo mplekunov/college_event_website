@@ -16,8 +16,10 @@ import TokenCreator from '../../utils/TokenCreator';
 import IIdentification from '../model/internal/user/IIdentification';
 
 import UserDatabase from '../../database/UserDatabase';
+import RSOController from '../controller/RSOController';
+import RSODatabase from '../../database/RSODatabase';
 
-export const userRoute = express.Router();
+export const rsoRoute = express.Router();
 
 let databaseURL = process.env.DB_CONNECTION_STRING;
 let databaseName = process.env.DB_NAME;
@@ -33,13 +35,30 @@ const userDatabase = UserDatabase.connect(
     password
 );
 
-const userController = new UserController(userDatabase);
+const rsoDatabase = RSODatabase.connect(
+    databaseURL,
+    databaseName,
+    username,
+    password
+);
 
-userRoute.use(new JWTAuthenticator(userDatabase).authenticate(new TokenCreator<IIdentification>(privateKey)));
+const rsoController = new RSOController(rsoDatabase, new UserController(userDatabase));
 
-userRoute.use(express.json({ limit: '30mb' }));
+rsoRoute.use(new JWTAuthenticator(userDatabase).authenticate(new TokenCreator<IIdentification>(privateKey)));
 
-userRoute.route('/')
-    .get(userController.get)
-    .delete(userController.delete)
+rsoRoute.use(express.json({ limit: '30mb' }));
+
+rsoRoute.route('/rsos')
+    .get(rsoController.getAll)
+    .post(rsoController.add);
+
+rsoRoute.route('/rsos/:rsoID')
+    .get(rsoController.get)
+    .delete(rsoController.delete);
     
+
+rsoRoute.route('/rsos/:rsoID/enter')
+    .get(rsoController.enter);
+
+rsoRoute.route('/rsos/:rsoID/leave')
+    .get(rsoController.leave);

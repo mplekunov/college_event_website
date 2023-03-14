@@ -4,7 +4,7 @@ import { ResponseCodes } from "../../utils/ResponseCodes";
 
 import IDatabase from '../../database/IDatabase';
 
-import bson, { ObjectId } from 'bson';
+import bson from 'bson';
 
 import BaseUserController from "./base/BaseUserController";
 import BaseEventController from "./base/BaseEventController";
@@ -73,7 +73,7 @@ export default class EventController extends BaseEventController {
         }
     }
 
-    create = async (req: Request, res: Response) => {
+    add = async (req: Request, res: Response) => {
         let eventCreationSchema: IBaseEvent;
 
         try {
