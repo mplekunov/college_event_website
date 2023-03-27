@@ -1,4 +1,5 @@
 import IAffiliate from "../affiliate/IAffiliate";
+import IBaseAffiliate from "../affiliate/IBaseAffiliate";
 import IMember from "../member/IMember";
 import IBaseUniversity from "../university/IBaseUniversity";
 import { UniversityMemberType } from "../universityMember/UniversityMemberType";
@@ -27,5 +28,5 @@ export default interface IBaseUser extends ICredentials, IContactInformation {
      */
     userLevel: UserLevel;
 
-    universityAffiliation: IAffiliate<IBaseUniversity, IMember<UniversityMemberType>>;
+    universityAffiliation: IBaseAffiliate<UniversityMemberType>;
 }

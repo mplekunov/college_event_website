@@ -19,16 +19,12 @@ import BaseUserController from "./base/BaseUserController";
 import JWTStorage from "../middleware/authentication/JWTStorage";
 import UserToken from "../model/internal/userToken/UserToken";
 import IBaseUser from "../model/internal/user/IBaseUser";
-import BaseUserSchema from "../model/internal/user/BaseUserSchema";
 import BaseUniversityAffiliateSchema from "../model/internal/affiliate/UniversityAffiliate";
-import UniversityMemberSchema from "../model/internal/member/UniversityMemberSchema";
-import BaseUniversitySchema from "../model/internal/university/BaseUniversitySchema";
-import LocationSchema from "../model/internal/location/LocationSchema";
 import { UserLevel } from "../model/internal/user/UserLevel";
-import { ObjectId } from "bson";
-import { UniversityMemberType } from "../model/internal/universityMember/UniversityMemberType";
-import UserSchema from "../model/internal/user/UserSchema";
-import IUserResponse from "../model/external/response/user/IUserResponse";
+import BaseUserSchema from "../model/internal/user/BaseUserSchema";
+import BaseUniversitySchema from "../model/internal/university/BaseUniversitySchema";
+import BaseLocationSchema from "../model/internal/location/BaseLocationSchema";
+import UniversityController from "./UniversityController";
 
 /**
  * This class creates several properties responsible for authentication actions 
@@ -41,12 +37,17 @@ export default class AuthenticationController extends BaseUserController {
     protected accessTokenTimeoutInSeconds = 24 * 60 * 60;
     protected refreshTokenTimeoutInSeconds = 24 * 60 * 60;
 
+    private universityController: UniversityController;
+
     constructor(
         database: IDatabase<IBaseUser, IUser>,
         encryptor: Encryptor,
-        tokenCreator: TokenCreator<IIdentification>
+        tokenCreator: TokenCreator<IIdentification>,
+        universityController: UniversityController
     ) {
         super(database);
+
+        this.universityController = universityController;
 
         this.encryptor = encryptor;
         this.tokenCreator = tokenCreator;
@@ -68,30 +69,14 @@ export default class AuthenticationController extends BaseUserController {
             req.body?.username,
             req.body?.password,
             req.body?.email,
-            UserLevel.STUDENT,
+            parseInt(req.body?.userLevel) as UserLevel,
             new BaseUniversityAffiliateSchema(
-                new BaseUniversitySchema(
-                    new ObjectId(req.body?.universityAffiliation?.organization?.universityID),
-                    req.body?.universityAffiliation?.organization?.name,
-                    req.body?.universityAffiliation?.organization?.description,
-                    new LocationSchema(
-                        req.body?.universityAffiliation?.organization?.location?.address,
-                        parseFloat(req.body?.universityAffiliation?.organization?.location?.longitude),
-                        parseFloat(req.body?.universityAffiliation?.organization?.location?.latitude)
-                    ),
-                    parseInt(req.body?.universityAffiliation?.organization?.numStudents)
-                ),
-                new UniversityMemberSchema(
-                    new ObjectId(req.body?.universityAffiliation?.affiliationType?.userID),
-                    new ObjectId(req.body?.universityAffiliation?.affiliationType?.organizationID),
-                    UniversityMemberType.STUDENT
-                )
+                req.body?.university.name,
+                parseInt(req.body?.university.affiliationType)
             )
         );
 
         return this.verifySchema(request, res);
-
-        return Promise.reject();
     }
 
     protected parseRefreshJWTRequest(req: Request, res: Response): Promise<RefreshJWTRequestSchema> {
@@ -202,6 +187,21 @@ export default class AuthenticationController extends BaseUserController {
         }
     }
 
+    protected parseRegisterUniversityRequest(req: Request, res: Response): Promise<BaseUniversitySchema> {
+        let request = new BaseUniversitySchema(
+            req.body?.university?.name,
+            req.body?.university?.description,
+            new BaseLocationSchema(
+                req.body?.university?.location?.address,
+                parseFloat(req.body?.university?.location?.longitude),
+                parseFloat(req.body?.university?.location?.latitude)
+            ),
+            req.body?.university?.numStudents
+        );
+
+        return this.verifySchema(request, res);
+    }
+
     /**
      * Registers client account on the server.
      * 
@@ -229,7 +229,7 @@ export default class AuthenticationController extends BaseUserController {
             return this.send(ResponseCodes.BAD_REQUEST, res, `User with such email already exists.`);
         }
 
-        let internalUser = new UserSchema(
+        let internalUser = new BaseUserSchema(
             parsedRequest.firstName,
             parsedRequest.lastName,
             parsedRequest.username,
@@ -237,17 +237,32 @@ export default class AuthenticationController extends BaseUserController {
             parsedRequest.email,
             parsedRequest.userLevel,
             parsedRequest.lastSeen,
-            new ObjectId(),
-            parsedRequest.universityAffiliation,
-            []
+            parsedRequest.universityAffiliation
         );
 
+        if (internalUser.userLevel === UserLevel.ADMIN) {
+            let universitySchema: BaseUniversitySchema;
+
+            try {
+                universitySchema = await this.parseRegisterUniversityRequest(req, res);
+
+                let university = await this.universityController.requestCreate(universitySchema, res);
+
+                this.send(ResponseCodes.BAD_REQUEST, res, university);
+            } catch (response) {
+                return response;
+            }
+        }
+
         internalUser.password = await this.encryptor.encrypt(internalUser.password);
+        try {
+            let createdUser = await this.database.Create(internalUser);
 
-        let createdUser = await this.database.Create(internalUser);
-
-        if (createdUser === null) {
-            return this.send(ResponseCodes.BAD_REQUEST, res, `User could not be created.`);
+            if (createdUser === null) {
+                return this.send(ResponseCodes.BAD_REQUEST, res, `User could not be created.`);
+            }
+        } catch (error) {
+            return this.send(ResponseCodes.BAD_REQUEST, res, error);
         }
 
         return this.send(ResponseCodes.CREATED, res, "User has been created.");

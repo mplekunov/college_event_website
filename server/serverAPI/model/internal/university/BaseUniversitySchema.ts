@@ -1,29 +1,27 @@
-import { ObjectId } from "bson";
-import { IsInt, IsPositive, IsString, ValidateNested } from "class-validator";
-import Schema from "../../Schema";
-import ILocation from "../location/ILocation";
 import IBaseUniversity from "./IBaseUniversity";
+import Schema from "../../Schema";
+import IBaseLocation from "../location/IBaseLocation";
+import { IsInt, IsNotEmpty, IsPositive, IsString, ValidateNested } from "class-validator";
 
-export default class BaseUniversityShema extends Schema implements IBaseUniversity {
-    universityID: ObjectId;
-    
+export default class BaseUniversitySchema extends Schema implements IBaseUniversity {
     @IsString()
+    @IsNotEmpty()
     name: string;
 
     @IsString()
+    @IsNotEmpty()
     description: string;
 
     @ValidateNested()
-    location: ILocation;
+    location: IBaseLocation;
 
     @IsPositive()
     @IsInt()
     numStudents: number;
 
-    constructor(universityID: ObjectId, name: string, description: string, location: ILocation, numStudents: number) {
+    constructor(name: string, description: string, location: IBaseLocation, numStudents: number) {
         super();
 
-        this.universityID = universityID;
         this.name = name;
         this.description = description;
         this.location = location;

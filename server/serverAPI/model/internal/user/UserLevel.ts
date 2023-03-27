@@ -1,6 +1,6 @@
 export enum UserLevel {
-    SUPER_ADMIN,
+    STUDENT,
     ADMIN,
-    STUDENT
+    SUPER_ADMIN
 }
 

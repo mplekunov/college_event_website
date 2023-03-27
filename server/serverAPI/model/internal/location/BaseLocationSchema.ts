@@ -1,8 +1,8 @@
 import { IsNumber, IsString } from "class-validator";
 import Schema from "../../Schema";
-import ILocation from "./ILocation";
+import IBaseLocation from "./IBaseLocation";
 
-export default class LocationSchema extends Schema implements ILocation {
+export default class BaseLocationSchema extends Schema implements IBaseLocation {
     @IsString()
     address: string;
 

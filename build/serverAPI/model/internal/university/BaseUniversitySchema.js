@@ -9,17 +9,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const class_validator_1 = require("class-validator");
 const Schema_1 = __importDefault(require("../../Schema"));
-class BaseUniversityShema extends Schema_1.default {
-    universityID;
+const class_validator_1 = require("class-validator");
+class BaseUniversitySchema extends Schema_1.default {
     name;
     description;
     location;
     numStudents;
-    constructor(universityID, name, description, location, numStudents) {
+    constructor(name, description, location, numStudents) {
         super();
-        this.universityID = universityID;
         this.name = name;
         this.description = description;
         this.location = location;
@@ -27,17 +25,19 @@ class BaseUniversityShema extends Schema_1.default {
     }
 }
 __decorate([
-    (0, class_validator_1.IsString)()
-], BaseUniversityShema.prototype, "name", void 0);
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)()
+], BaseUniversitySchema.prototype, "name", void 0);
 __decorate([
-    (0, class_validator_1.IsString)()
-], BaseUniversityShema.prototype, "description", void 0);
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)()
+], BaseUniversitySchema.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.ValidateNested)()
-], BaseUniversityShema.prototype, "location", void 0);
+], BaseUniversitySchema.prototype, "location", void 0);
 __decorate([
     (0, class_validator_1.IsPositive)(),
     (0, class_validator_1.IsInt)()
-], BaseUniversityShema.prototype, "numStudents", void 0);
-exports.default = BaseUniversityShema;
+], BaseUniversitySchema.prototype, "numStudents", void 0);
+exports.default = BaseUniversitySchema;
 //# sourceMappingURL=BaseUniversitySchema.js.map

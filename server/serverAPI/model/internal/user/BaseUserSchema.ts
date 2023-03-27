@@ -3,14 +3,11 @@ import { IsEmail, IsInt, IsNotEmpty, IsNumber, IsPositive, IsString, ValidateNes
 import Schema from "../../Schema";
 
 import IBaseUser from "./IBaseUser";
-import ICredentials from "./ICredentials";
-import IAffiliate from "../affiliate/IAffiliate";
-import IMember from "../member/IMember";
-import IBaseUniversity from "../university/IBaseUniversity";
 import { UniversityMemberType } from "../universityMember/UniversityMemberType";
 import { UserLevel } from "./UserLevel";
+import IBaseAffiliate from "../affiliate/IBaseAffiliate";
 
-export default class BaseUserSchema extends Schema implements IBaseUser, ICredentials {
+export default class BaseUserSchema extends Schema implements IBaseUser {
     @IsString()
     @IsNotEmpty()
     firstName: string;
@@ -37,8 +34,7 @@ export default class BaseUserSchema extends Schema implements IBaseUser, ICreden
 
     userLevel: UserLevel;
 
-    @ValidateNested()
-    universityAffiliation: IAffiliate<IBaseUniversity, IMember<UniversityMemberType>>;
+    universityAffiliation: IBaseAffiliate<UniversityMemberType>;
 
     constructor(
         firstName: string,
@@ -48,7 +44,7 @@ export default class BaseUserSchema extends Schema implements IBaseUser, ICreden
         email: string,
         userLevel: UserLevel,
         lastSeen: number,
-        universityAffiliation: IAffiliate<IBaseUniversity, IMember<UniversityMemberType>>
+        universityAffiliation: IBaseAffiliate<UniversityMemberType>
     ) {
         super();
         

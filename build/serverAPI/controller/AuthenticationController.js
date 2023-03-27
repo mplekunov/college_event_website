@@ -12,13 +12,10 @@ const BaseUserController_1 = __importDefault(require("./base/BaseUserController"
 const JWTStorage_1 = __importDefault(require("../middleware/authentication/JWTStorage"));
 const UserToken_1 = __importDefault(require("../model/internal/userToken/UserToken"));
 const UniversityAffiliate_1 = __importDefault(require("../model/internal/affiliate/UniversityAffiliate"));
-const UniversityMemberSchema_1 = __importDefault(require("../model/internal/member/UniversityMemberSchema"));
-const BaseUniversitySchema_1 = __importDefault(require("../model/internal/university/BaseUniversitySchema"));
-const LocationSchema_1 = __importDefault(require("../model/internal/location/LocationSchema"));
 const UserLevel_1 = require("../model/internal/user/UserLevel");
-const bson_1 = require("bson");
-const UniversityMemberType_1 = require("../model/internal/universityMember/UniversityMemberType");
-const UserSchema_1 = __importDefault(require("../model/internal/user/UserSchema"));
+const BaseUserSchema_1 = __importDefault(require("../model/internal/user/BaseUserSchema"));
+const BaseUniversitySchema_1 = __importDefault(require("../model/internal/university/BaseUniversitySchema"));
+const BaseLocationSchema_1 = __importDefault(require("../model/internal/location/BaseLocationSchema"));
 /**
  * This class creates several properties responsible for authentication actions
  * provided to the user.
@@ -28,8 +25,10 @@ class AuthenticationController extends BaseUserController_1.default {
     tokenCreator;
     accessTokenTimeoutInSeconds = 24 * 60 * 60;
     refreshTokenTimeoutInSeconds = 24 * 60 * 60;
-    constructor(database, encryptor, tokenCreator) {
+    universityController;
+    constructor(database, encryptor, tokenCreator, universityController) {
         super(database);
+        this.universityController = universityController;
         this.encryptor = encryptor;
         this.tokenCreator = tokenCreator;
     }
@@ -39,9 +38,8 @@ class AuthenticationController extends BaseUserController_1.default {
         ;
     }
     parseRegisterRequest(req, res) {
-        let request = new UserRegisterRequest_1.default(req.body?.firstName, req.body?.lastName, req.body?.username, req.body?.password, req.body?.email, UserLevel_1.UserLevel.STUDENT, new UniversityAffiliate_1.default(new BaseUniversitySchema_1.default(new bson_1.ObjectId(req.body?.universityAffiliation?.organization?.universityID), req.body?.universityAffiliation?.organization?.name, req.body?.universityAffiliation?.organization?.description, new LocationSchema_1.default(req.body?.universityAffiliation?.organization?.location?.address, parseFloat(req.body?.universityAffiliation?.organization?.location?.longitude), parseFloat(req.body?.universityAffiliation?.organization?.location?.latitude)), parseInt(req.body?.universityAffiliation?.organization?.numStudents)), new UniversityMemberSchema_1.default(new bson_1.ObjectId(req.body?.universityAffiliation?.affiliationType?.userID), new bson_1.ObjectId(req.body?.universityAffiliation?.affiliationType?.organizationID), UniversityMemberType_1.UniversityMemberType.STUDENT)));
+        let request = new UserRegisterRequest_1.default(req.body?.firstName, req.body?.lastName, req.body?.username, req.body?.password, req.body?.email, parseInt(req.body?.userLevel), new UniversityAffiliate_1.default(req.body?.university.name, parseInt(req.body?.university.affiliationType)));
         return this.verifySchema(request, res);
-        return Promise.reject();
     }
     parseRefreshJWTRequest(req, res) {
         let request = new RefreshJWTRequest_1.default(req.body?.refreshToken);
@@ -129,6 +127,10 @@ class AuthenticationController extends BaseUserController_1.default {
             return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Could not perform logout operation.");
         }
     };
+    parseRegisterUniversityRequest(req, res) {
+        let request = new BaseUniversitySchema_1.default(req.body?.university?.name, req.body?.university?.description, new BaseLocationSchema_1.default(req.body?.university?.location?.address, parseFloat(req.body?.university?.location?.longitude), parseFloat(req.body?.university?.location?.latitude)), req.body?.university?.numStudents);
+        return this.verifySchema(request, res);
+    }
     /**
      * Registers client account on the server.
      *
@@ -153,11 +155,27 @@ class AuthenticationController extends BaseUserController_1.default {
         if (emailExists) {
             return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, `User with such email already exists.`);
         }
-        let internalUser = new UserSchema_1.default(parsedRequest.firstName, parsedRequest.lastName, parsedRequest.username, parsedRequest.password, parsedRequest.email, parsedRequest.userLevel, parsedRequest.lastSeen, new bson_1.ObjectId(), parsedRequest.universityAffiliation, []);
+        let internalUser = new BaseUserSchema_1.default(parsedRequest.firstName, parsedRequest.lastName, parsedRequest.username, parsedRequest.password, parsedRequest.email, parsedRequest.userLevel, parsedRequest.lastSeen, parsedRequest.universityAffiliation);
+        if (internalUser.userLevel === UserLevel_1.UserLevel.ADMIN) {
+            let universitySchema;
+            try {
+                universitySchema = await this.parseRegisterUniversityRequest(req, res);
+                let university = await this.universityController.requestCreate(universitySchema, res);
+                this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, university);
+            }
+            catch (response) {
+                return response;
+            }
+        }
         internalUser.password = await this.encryptor.encrypt(internalUser.password);
-        let createdUser = await this.database.Create(internalUser);
-        if (createdUser === null) {
-            return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, `User could not be created.`);
+        try {
+            let createdUser = await this.database.Create(internalUser);
+            if (createdUser === null) {
+                return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, `User could not be created.`);
+            }
+        }
+        catch (error) {
+            return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, error);
         }
         return this.send(ResponseCodes_1.ResponseCodes.CREATED, res, "User has been created.");
     };

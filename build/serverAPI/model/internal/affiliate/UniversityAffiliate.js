@@ -12,19 +12,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const class_validator_1 = require("class-validator");
 const Schema_1 = __importDefault(require("../../Schema"));
 class BaseUniversityAffiliateSchema extends Schema_1.default {
-    organization;
+    organizationName;
     affiliationType;
     constructor(organization, affiliationType) {
         super();
-        this.organization = organization;
+        this.organizationName = organization;
         this.affiliationType = affiliationType;
     }
 }
 __decorate([
-    (0, class_validator_1.ValidateNested)()
-], BaseUniversityAffiliateSchema.prototype, "organization", void 0);
-__decorate([
-    (0, class_validator_1.ValidateNested)()
-], BaseUniversityAffiliateSchema.prototype, "affiliationType", void 0);
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)()
+], BaseUniversityAffiliateSchema.prototype, "organizationName", void 0);
 exports.default = BaseUniversityAffiliateSchema;
 //# sourceMappingURL=UniversityAffiliate.js.map

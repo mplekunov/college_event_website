@@ -1,10 +1,8 @@
-import { ObjectId } from "bson";
-import ILocation from "../location/ILocation";
+import IBaseLocation from "../location/IBaseLocation";
 
 export default interface IBaseUniversity {
-    universityID: ObjectId;
     name: string;
     description: string;
-    location: ILocation;
+    location: IBaseLocation;
     numStudents: number;
 }

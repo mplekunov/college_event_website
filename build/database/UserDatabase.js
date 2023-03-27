@@ -30,7 +30,6 @@ const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const mysql_1 = __importDefault(require("mysql"));
 const bson_1 = require("bson");
-const UniversityMemberType_1 = require("../serverAPI/model/internal/universityMember/UniversityMemberType");
 /**
  * UserDatabase is responsible for providing an interface for the end-user filled with methods which allows
  * CRUD operations on the User collection.
@@ -40,14 +39,16 @@ const UniversityMemberType_1 = require("../serverAPI/model/internal/universityMe
  */
 class UserDatabase {
     static instance;
+    static universityDatabase;
     mysqlPool;
-    constructor(mysqlHost, databaseName, username, password) {
+    constructor(mysqlHost, databaseName, username, password, universityDatabase) {
         let mysqlConnection = mysql_1.default.createPool({
             host: mysqlHost,
             database: databaseName,
             user: username,
             password: password
         });
+        UserDatabase.universityDatabase = universityDatabase;
         this.mysqlPool = mysqlConnection;
     }
     /**
@@ -63,13 +64,22 @@ class UserDatabase {
      *
      * @returns UserDatabase object.
      */
-    static connect(mysqlHost, databaseName, username, password) {
+    static connect(mysqlHost, databaseName, username, password, universityDatabase) {
         if (UserDatabase.instance === undefined) {
-            UserDatabase.instance = new UserDatabase(mysqlHost, databaseName, username, password);
+            UserDatabase.instance = new UserDatabase(mysqlHost, databaseName, username, password, universityDatabase);
         }
         return UserDatabase.instance;
     }
-    parseUser(result) {
+    async parseUser(result) {
+        let universityAffiliation;
+        let organizationsAffiliation;
+        try {
+            universityAffiliation = await this.parseUniversity(result);
+            organizationsAffiliation = await this.parseOrganizations(result);
+        }
+        catch (error) {
+            return Promise.reject(error);
+        }
         return {
             email: result.email,
             firstName: result.firstName,
@@ -79,20 +89,78 @@ class UserDatabase {
             password: result.password,
             userID: result.userID,
             userLevel: result.userLevel,
-            universityAffiliation: this.parseUniversity(result.universityAffiliation),
-            organizationsAffiliation: this.parseOrganizations(result.organizationsAffiliation)
+            universityAffiliation: universityAffiliation,
+            organizationsAffiliation: organizationsAffiliation
         };
     }
-    parseOrganizations(result) {
-        return [];
+    async parseOrganizations(result) {
+        let memberInfo;
+        try {
+            memberInfo = await new Promise((resolve, reject) => this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(err);
+                }
+                connection.query(`SELECT * FROM RSO_Members WHERE userID = '${result.userID}';`, (error, results, fields) => {
+                    connection.release();
+                    if (error || !Array.isArray(results) || results.length === 0) {
+                        return reject("Could not find RSO member info.");
+                    }
+                    return resolve(results);
+                });
+            }));
+        }
+        catch (error) {
+            return Promise.reject(error);
+        }
+        let organizations = [];
+        memberInfo.forEach(async (element) => {
+            organizations.push({
+                affiliationType: parseInt(element.memberType),
+                organizationName: element.rsoName
+            });
+        });
+        return organizations;
     }
-    parseUniversity(result) {
+    async getUniversityMemberInfo(userID) {
+        return new Promise((resolve, reject) => this.mysqlPool.getConnection((err, connection) => {
+            if (err) {
+                return reject(err);
+            }
+            connection.query(`SELECT * FROM University_Members WHERE userID = '${userID}';`, (error, results, fields) => {
+                connection.release();
+                if (error || !Array.isArray(results) || results.length === 0) {
+                    return reject("Could not find university member info.");
+                }
+                return resolve(results[0]);
+            });
+        }));
+    }
+    async createUniveristyMemberInfo(userID, universityID, universityName, memberType) {
+        return new Promise((resolve, reject) => this.mysqlPool.getConnection((err, connection) => {
+            if (err) {
+                return reject(err);
+            }
+            connection.query(`INSERT INTO University_Members (userID, memberType, universityName, universityID) 
+                                VALUES('${userID}', ${memberType}, '${universityName}', '${universityID}');`, (error, results, fields) => {
+                connection.release();
+                if (error || !Array.isArray(results) || results.length === 0) {
+                    return reject("Could not create university member info.");
+                }
+                return this.getUniversityMemberInfo(userID);
+            });
+        }));
+    }
+    async parseUniversity(result) {
+        let memberInfo;
+        try {
+            memberInfo = await this.getUniversityMemberInfo(result.userID);
+        }
+        catch (error) {
+            return Promise.reject(error);
+        }
         return {
-            affiliationType: {
-                memberType: UniversityMemberType_1.UniversityMemberType.STUDENT,
-                organizationID: new bson_1.ObjectId(),
-                userID: new bson_1.ObjectId()
-            }, organization: { description: "", location: { address: "", latitude: 0, longitude: 0 }, name: "", numStudents: 0, universityID: new bson_1.ObjectId() }
+            organizationName: memberInfo.universityName,
+            affiliationType: parseInt(memberInfo.memberType)
         };
     }
     async GetAll(parameters) {
@@ -101,7 +169,7 @@ class UserDatabase {
                 return Promise.resolve(null);
             }
             let users = [];
-            results.forEach((element) => users.push(this.parseUser(element)));
+            results.forEach(async (element) => users.push(await this.parseUser(element)));
             return Promise.resolve(users);
         });
         return Promise.resolve(null);
@@ -131,17 +199,37 @@ class UserDatabase {
     }
     async Create(object) {
         return new Promise((resolve, reject) => {
-            this.mysqlPool.getConnection((err, connection) => {
+            this.mysqlPool.getConnection(async (err, connection) => {
                 if (err) {
                     return reject(err);
                 }
+                let university;
+                try {
+                    university = await UserDatabase.universityDatabase.Get(new Map([['name', object.universityAffiliation.organizationName]]));
+                    if (university === null) {
+                        return reject('User could not be created. University doesn\'t exist.');
+                    }
+                }
+                catch (response) {
+                    return reject(response);
+                }
                 connection.query(`INSERT INTO User (userID, firstName, lastName, lastSeen, userLevel, username, password, email) 
-                VALUES('${object.userID.toString()}', '${object.firstName}', '${object.lastName}', ${object.lastSeen}, ${object.userLevel}, '${object.username}', '${object.password}', '${object.email}');`, async (error, results, fields) => {
+                VALUES('${(new bson_1.ObjectId()).toString()}', '${object.firstName}', '${object.lastName}', ${object.lastSeen}, ${object.userLevel}, '${object.username}', '${object.password}', '${object.email}');`, async (error, results, fields) => {
                     connection.release();
                     if (error) {
                         return reject(error);
                     }
-                    return resolve(this.Get(new Map([['userID', object.userID.toString()]])));
+                    try {
+                        let user = await this.Get(new Map([['username', object.username]]));
+                        if (user === null || university === null) {
+                            return reject('User could not be created.');
+                        }
+                        await this.createUniveristyMemberInfo(user.userID.toString(), university.universityID.toString(), university.name, object.universityAffiliation.affiliationType);
+                        return resolve(user);
+                    }
+                    catch (error) {
+                        return reject(error);
+                    }
                 });
             });
         });
