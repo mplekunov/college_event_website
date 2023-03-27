@@ -18,7 +18,7 @@ export default class BaseUserController extends BaseController {
         this.database = database;
     }
 
-    public convertToUserResponse(user: IUser): IUserResponse {
+    public convertToUserResponse(user: IBaseUser): IUserResponse {
         return {
             username: user.username,
             firstName: user.firstName,
@@ -56,7 +56,7 @@ export default class BaseUserController extends BaseController {
         }, (error) => Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, this.getException(error))));
     }
 
-    public async requestUpdate(id: string, user: IUser, res: Response): Promise<IUser> {
+    public async requestUpdate(id: string, user: IBaseUser, res: Response): Promise<IUser> {
         return this.database.Update(id, user).then(updatedUser => {
             if (updatedUser === null) {
                 return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, "User could not be updated."));
@@ -78,6 +78,7 @@ export default class BaseUserController extends BaseController {
 
     public async requestGet(parameters: Map<string, any>, res: Response): Promise<IUser> {
         return this.database.Get(parameters).then(async user => {
+
             if (user === null) {
                 return Promise.reject(this.send(ResponseCodes.NOT_FOUND, res, "User could not be found."));
             }

@@ -46,7 +46,7 @@ export default interface IDatabase<BaseType, Type> {
       * @throws IncorrectIDFormat exception when id has incorrect format.
       * @returns Promise filled with updated T object or null if T object wasn't updated.
       */    
-     Update(id: string, object: Type): Promise<Type | null>;
+     Update(id: string, object: BaseType): Promise<Type | null>;
  
      /**
       * Deletes T object from database.

@@ -29,6 +29,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const mysql_1 = __importDefault(require("mysql"));
+const bson_1 = require("bson");
+const UniversityMemberType_1 = require("../serverAPI/model/internal/universityMember/UniversityMemberType");
 /**
  * UserDatabase is responsible for providing an interface for the end-user filled with methods which allows
  * CRUD operations on the User collection.
@@ -38,16 +40,15 @@ const mysql_1 = __importDefault(require("mysql"));
  */
 class UserDatabase {
     static instance;
-    mysqlConnection;
+    mysqlPool;
     constructor(mysqlHost, databaseName, username, password) {
-        let mysqlConnection = mysql_1.default.createConnection({
+        let mysqlConnection = mysql_1.default.createPool({
             host: mysqlHost,
             database: databaseName,
             user: username,
             password: password
         });
-        mysqlConnection.connect();
-        this.mysqlConnection = mysqlConnection;
+        this.mysqlPool = mysqlConnection;
     }
     /**
      * Retrieves current instance of the UserDatabase if such exists.
@@ -68,20 +69,114 @@ class UserDatabase {
         }
         return UserDatabase.instance;
     }
-    GetAll(parameters) {
-        throw new Error('Method not implemented.');
+    parseUser(result) {
+        return {
+            email: result.email,
+            firstName: result.firstName,
+            lastName: result.lastName,
+            lastSeen: result.lastSeen,
+            username: result.username,
+            password: result.password,
+            userID: result.userID,
+            userLevel: result.userLevel,
+            universityAffiliation: this.parseUniversity(result.universityAffiliation),
+            organizationsAffiliation: this.parseOrganizations(result.organizationsAffiliation)
+        };
     }
-    Get(parameters) {
-        throw new Error('Method not implemented.');
+    parseOrganizations(result) {
+        return [];
     }
-    Create(object) {
-        throw new Error('Method not implemented.');
+    parseUniversity(result) {
+        return {
+            affiliationType: {
+                memberType: UniversityMemberType_1.UniversityMemberType.STUDENT,
+                organizationID: new bson_1.ObjectId(),
+                userID: new bson_1.ObjectId()
+            }, organization: { description: "", location: { address: "", latitude: 0, longitude: 0 }, name: "", numStudents: 0, universityID: new bson_1.ObjectId() }
+        };
+    }
+    async GetAll(parameters) {
+        await this.mysqlPool.query(`SELECT * FROM User`, (error, results, fields) => {
+            if (error || !Array.isArray(results) || results.length === 0) {
+                return Promise.resolve(null);
+            }
+            let users = [];
+            results.forEach((element) => users.push(this.parseUser(element)));
+            return Promise.resolve(users);
+        });
+        return Promise.resolve(null);
+    }
+    getSearchQuery(parameters) {
+        let query = "";
+        parameters.forEach((value, key) => query += `${key} = '${value}' AND `);
+        query = query.substring(0, query.length - 5);
+        return query;
+    }
+    async Get(parameters) {
+        let query = this.getSearchQuery(parameters);
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(err);
+                }
+                connection.query(`SELECT * FROM User WHERE ${query} LIMIT 1;`, (error, results, fields) => {
+                    connection.release();
+                    if (error || !Array.isArray(results) || results.length === 0) {
+                        return resolve(null);
+                    }
+                    return resolve(this.parseUser(results[0]));
+                });
+            });
+        });
+    }
+    async Create(object) {
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(err);
+                }
+                connection.query(`INSERT INTO User (userID, firstName, lastName, lastSeen, userLevel, username, password, email) 
+                VALUES('${object.userID.toString()}', '${object.firstName}', '${object.lastName}', ${object.lastSeen}, ${object.userLevel}, '${object.username}', '${object.password}', '${object.email}');`, async (error, results, fields) => {
+                    connection.release();
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolve(this.Get(new Map([['userID', object.userID.toString()]])));
+                });
+            });
+        });
     }
     Update(id, object) {
-        throw new Error('Method not implemented.');
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(err);
+                }
+                connection.query(`UPDATE User SET firstName = '${object.firstName}', lastName = '${object.lastName}', lastSeen = ${object.lastSeen}, userLevel = ${object.userLevel}, username = '${object.username}', password = '${object.password}', email = '${object.email}' WHERE userID = '${id}';`, async (error, results, fields) => {
+                    connection.release();
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolve(this.Get(new Map([['userID', id]])));
+                });
+            });
+        });
     }
     Delete(id) {
-        throw new Error('Method not implemented.');
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(err);
+                }
+                connection.query(`DELETE FROM User WHERE userID = '${id}';`, async (error, results, fields) => {
+                    connection.release();
+                    if (error) {
+                        return reject(error);
+                    }
+                    return results.affectedRows === 0 ? resolve(false) : resolve(true);
+                });
+            });
+        });
     }
 }
 exports.default = UserDatabase;

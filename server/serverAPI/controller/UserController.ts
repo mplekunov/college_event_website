@@ -27,7 +27,7 @@ export default class UserController extends BaseUserController {
      * @param res Response parameter that holds information about response.
      */
     get = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["username", req.serverUser]]);
+        let parameters = new Map<string, any>([["username", req.serverUser.username]]);
 
         return this.requestGet(parameters, res).then(user => {
             return this.send(ResponseCodes.OK, res, this.convertToUserResponse(user));
@@ -46,7 +46,7 @@ export default class UserController extends BaseUserController {
         try {
             let user = await this.requestGet(parameters, res);
 
-            let result = await this.requestDelete(req.serverUser.username, res)
+            let result = await this.requestDelete(req.serverUser.userID.toString(), res)
             if (!result) {
                 return this.send(ResponseCodes.BAD_REQUEST, res, "User could not be deleted.");
             }

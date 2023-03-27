@@ -40,8 +40,6 @@ const process_1 = require("process");
 const Logger_1 = __importDefault(require("./serverAPI/middleware/logger/Logger"));
 const UserRoutes_1 = require("./serverAPI/routes/UserRoutes");
 const AuthenticationRoutes_1 = require("./serverAPI/routes/AuthenticationRoutes");
-// import { ingredientRoute } from './serverAPI/routes/IngredientRoute';
-// import { recipeRoute } from './serverAPI/routes/RecipeRoute';
 const app = (0, express_1.default)();
 exports.app = app;
 app.use(Logger_1.default.consoleLog);
@@ -51,8 +49,6 @@ var corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use('/user', UserRoutes_1.userRoute);
-// app.use('/recipes', recipeRoute)
-// app.use('/ingredients', ingredientRoute);
 app.use('/auth', AuthenticationRoutes_1.authenticationRoute);
 const server = (port) => {
     app.listen(port, () => {

@@ -56,5 +56,8 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsEmail)()
 ], BaseUserSchema.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.ValidateNested)()
+], BaseUserSchema.prototype, "universityAffiliation", void 0);
 exports.default = BaseUserSchema;
 //# sourceMappingURL=BaseUserSchema.js.map

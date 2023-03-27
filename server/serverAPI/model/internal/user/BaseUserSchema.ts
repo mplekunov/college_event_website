@@ -1,4 +1,4 @@
-import { IsEmail, IsInt, IsNotEmpty, IsNumber, IsPositive, IsString } from "class-validator";
+import { IsEmail, IsInt, IsNotEmpty, IsNumber, IsPositive, IsString, ValidateNested } from "class-validator";
 
 import Schema from "../../Schema";
 
@@ -7,6 +7,8 @@ import ICredentials from "./ICredentials";
 import IAffiliate from "../affiliate/IAffiliate";
 import IMember from "../member/IMember";
 import IBaseUniversity from "../university/IBaseUniversity";
+import { UniversityMemberType } from "../universityMember/UniversityMemberType";
+import { UserLevel } from "./UserLevel";
 
 export default class BaseUserSchema extends Schema implements IBaseUser, ICredentials {
     @IsString()
@@ -35,6 +37,7 @@ export default class BaseUserSchema extends Schema implements IBaseUser, ICreden
 
     userLevel: UserLevel;
 
+    @ValidateNested()
     universityAffiliation: IAffiliate<IBaseUniversity, IMember<UniversityMemberType>>;
 
     constructor(

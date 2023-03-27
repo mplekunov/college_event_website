@@ -1,6 +1,7 @@
 import { ObjectId } from "bson";
 import IMember from "../../../internal/member/IMember";
 import RSOSchema from "../../../internal/rso/RSOSchema";
+import { RSOMemberType } from "../../../internal/rsoMember/RSOMemberType";
 import IExternalMember from "../../member/IExternalMember";
 
 export default class RSORegisterRequestSchema extends RSOSchema {

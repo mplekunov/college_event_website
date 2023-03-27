@@ -6,6 +6,7 @@ import IRSO from "./IRSO";
 import IBaseEvent from "../event/IBaseEvent";
 import { ObjectId } from "bson";
 import Schema from "../../Schema";
+import { RSOMemberType } from "../rsoMember/RSOMemberType";
 
 export default class RSOSchema extends Schema implements IRSO {
     members: IMember<RSOMemberType>[];

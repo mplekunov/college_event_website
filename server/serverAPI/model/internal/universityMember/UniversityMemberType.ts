@@ -1,4 +1,4 @@
-enum UniversityMemberType {
+export enum UniversityMemberType {
     STUDENT,
     STAFF
 }

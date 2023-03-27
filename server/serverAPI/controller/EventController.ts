@@ -10,6 +10,8 @@ import BaseUserController from "./base/BaseUserController";
 import BaseEventController from "./base/BaseEventController";
 import IBaseEvent from "../model/internal/event/IBaseEvent";
 import IEvent from "../model/internal/event/IEvent";
+import { UniversityMemberType } from "../model/internal/universityMember/UniversityMemberType";
+import { RSOMemberType } from "../model/internal/rsoMember/RSOMemberType";
 
 /**
  * This class creates several properties responsible for event-actions 

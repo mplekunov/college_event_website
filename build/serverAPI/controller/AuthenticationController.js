@@ -7,11 +7,18 @@ const ResponseCodes_1 = require("../../utils/ResponseCodes");
 const Token_1 = __importDefault(require("../model/internal/token/Token"));
 const LoginRequest_1 = __importDefault(require("../model/external/request/authentication/LoginRequest"));
 const RefreshJWTRequest_1 = __importDefault(require("../model/external/request/authentication/RefreshJWTRequest"));
-const RegisterRequest_1 = __importDefault(require("../model/external/request/authentication/RegisterRequest"));
+const UserRegisterRequest_1 = __importDefault(require("../model/external/request/authentication/UserRegisterRequest"));
 const BaseUserController_1 = __importDefault(require("./base/BaseUserController"));
 const JWTStorage_1 = __importDefault(require("../middleware/authentication/JWTStorage"));
 const UserToken_1 = __importDefault(require("../model/internal/userToken/UserToken"));
-const BaseUserSchema_1 = __importDefault(require("../model/internal/user/BaseUserSchema"));
+const UniversityAffiliate_1 = __importDefault(require("../model/internal/affiliate/UniversityAffiliate"));
+const UniversityMemberSchema_1 = __importDefault(require("../model/internal/member/UniversityMemberSchema"));
+const BaseUniversitySchema_1 = __importDefault(require("../model/internal/university/BaseUniversitySchema"));
+const LocationSchema_1 = __importDefault(require("../model/internal/location/LocationSchema"));
+const UserLevel_1 = require("../model/internal/user/UserLevel");
+const bson_1 = require("bson");
+const UniversityMemberType_1 = require("../model/internal/universityMember/UniversityMemberType");
+const UserSchema_1 = __importDefault(require("../model/internal/user/UserSchema"));
 /**
  * This class creates several properties responsible for authentication actions
  * provided to the user.
@@ -32,8 +39,9 @@ class AuthenticationController extends BaseUserController_1.default {
         ;
     }
     parseRegisterRequest(req, res) {
-        let request = new RegisterRequest_1.default(req.body?.firstName, req.body?.lastName, req.body?.username, req.body?.password, req.body?.email, UserLevel.STUDENT, req.body?.universityAffiliation);
+        let request = new UserRegisterRequest_1.default(req.body?.firstName, req.body?.lastName, req.body?.username, req.body?.password, req.body?.email, UserLevel_1.UserLevel.STUDENT, new UniversityAffiliate_1.default(new BaseUniversitySchema_1.default(new bson_1.ObjectId(req.body?.universityAffiliation?.organization?.universityID), req.body?.universityAffiliation?.organization?.name, req.body?.universityAffiliation?.organization?.description, new LocationSchema_1.default(req.body?.universityAffiliation?.organization?.location?.address, parseFloat(req.body?.universityAffiliation?.organization?.location?.longitude), parseFloat(req.body?.universityAffiliation?.organization?.location?.latitude)), parseInt(req.body?.universityAffiliation?.organization?.numStudents)), new UniversityMemberSchema_1.default(new bson_1.ObjectId(req.body?.universityAffiliation?.affiliationType?.userID), new bson_1.ObjectId(req.body?.universityAffiliation?.affiliationType?.organizationID), UniversityMemberType_1.UniversityMemberType.STUDENT)));
         return this.verifySchema(request, res);
+        return Promise.reject();
     }
     parseRefreshJWTRequest(req, res) {
         let request = new RefreshJWTRequest_1.default(req.body?.refreshToken);
@@ -76,7 +84,7 @@ class AuthenticationController extends BaseUserController_1.default {
         }
         user.lastSeen = Date.now();
         try {
-            await this.requestUpdate(user.username, user, res);
+            await this.requestUpdate(user.userID.toString(), user, res);
         }
         catch (response) {
             return response;
@@ -145,7 +153,7 @@ class AuthenticationController extends BaseUserController_1.default {
         if (emailExists) {
             return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, `User with such email already exists.`);
         }
-        let internalUser = new BaseUserSchema_1.default(parsedRequest.firstName, parsedRequest.lastName, parsedRequest.username, parsedRequest.password, parsedRequest.email, UserLevel.STUDENT, parsedRequest.lastSeen, parsedRequest.universityAffiliation);
+        let internalUser = new UserSchema_1.default(parsedRequest.firstName, parsedRequest.lastName, parsedRequest.username, parsedRequest.password, parsedRequest.email, parsedRequest.userLevel, parsedRequest.lastSeen, new bson_1.ObjectId(), parsedRequest.universityAffiliation, []);
         internalUser.password = await this.encryptor.encrypt(internalUser.password);
         let createdUser = await this.database.Create(internalUser);
         if (createdUser === null) {

@@ -20,6 +20,15 @@ import JWTStorage from "../middleware/authentication/JWTStorage";
 import UserToken from "../model/internal/userToken/UserToken";
 import IBaseUser from "../model/internal/user/IBaseUser";
 import BaseUserSchema from "../model/internal/user/BaseUserSchema";
+import BaseUniversityAffiliateSchema from "../model/internal/affiliate/UniversityAffiliate";
+import UniversityMemberSchema from "../model/internal/member/UniversityMemberSchema";
+import BaseUniversitySchema from "../model/internal/university/BaseUniversitySchema";
+import LocationSchema from "../model/internal/location/LocationSchema";
+import { UserLevel } from "../model/internal/user/UserLevel";
+import { ObjectId } from "bson";
+import { UniversityMemberType } from "../model/internal/universityMember/UniversityMemberType";
+import UserSchema from "../model/internal/user/UserSchema";
+import IUserResponse from "../model/external/response/user/IUserResponse";
 
 /**
  * This class creates several properties responsible for authentication actions 
@@ -52,7 +61,6 @@ export default class AuthenticationController extends BaseUserController {
         return this.verifySchema(request, res);;
     }
 
-
     protected parseRegisterRequest(req: Request, res: Response): Promise<UserRegisterRequestSchema> {
         let request = new UserRegisterRequestSchema(
             req.body?.firstName,
@@ -61,10 +69,29 @@ export default class AuthenticationController extends BaseUserController {
             req.body?.password,
             req.body?.email,
             UserLevel.STUDENT,
-            req.body?.universityAffiliation
+            new BaseUniversityAffiliateSchema(
+                new BaseUniversitySchema(
+                    new ObjectId(req.body?.universityAffiliation?.organization?.universityID),
+                    req.body?.universityAffiliation?.organization?.name,
+                    req.body?.universityAffiliation?.organization?.description,
+                    new LocationSchema(
+                        req.body?.universityAffiliation?.organization?.location?.address,
+                        parseFloat(req.body?.universityAffiliation?.organization?.location?.longitude),
+                        parseFloat(req.body?.universityAffiliation?.organization?.location?.latitude)
+                    ),
+                    parseInt(req.body?.universityAffiliation?.organization?.numStudents)
+                ),
+                new UniversityMemberSchema(
+                    new ObjectId(req.body?.universityAffiliation?.affiliationType?.userID),
+                    new ObjectId(req.body?.universityAffiliation?.affiliationType?.organizationID),
+                    UniversityMemberType.STUDENT
+                )
+            )
         );
 
         return this.verifySchema(request, res);
+
+        return Promise.reject();
     }
 
     protected parseRefreshJWTRequest(req: Request, res: Response): Promise<RefreshJWTRequestSchema> {
@@ -91,7 +118,7 @@ export default class AuthenticationController extends BaseUserController {
 
         return userToken;
     }
- 
+
     /**
      * Logs client into the server using token from authorization header.
      * 
@@ -127,7 +154,7 @@ export default class AuthenticationController extends BaseUserController {
         user.lastSeen = Date.now();
 
         try {
-            await this.requestUpdate(user.username, user, res);
+            await this.requestUpdate(user.userID.toString(), user, res);
         } catch (response) {
             return response;
         }
@@ -202,15 +229,17 @@ export default class AuthenticationController extends BaseUserController {
             return this.send(ResponseCodes.BAD_REQUEST, res, `User with such email already exists.`);
         }
 
-        let internalUser = new BaseUserSchema(
+        let internalUser = new UserSchema(
             parsedRequest.firstName,
             parsedRequest.lastName,
             parsedRequest.username,
             parsedRequest.password,
             parsedRequest.email,
-            UserLevel.STUDENT,
+            parsedRequest.userLevel,
             parsedRequest.lastSeen,
-            parsedRequest.universityAffiliation
+            new ObjectId(),
+            parsedRequest.universityAffiliation,
+            []
         );
 
         internalUser.password = await this.encryptor.encrypt(internalUser.password);

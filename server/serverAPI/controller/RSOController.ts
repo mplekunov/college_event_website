@@ -13,6 +13,7 @@ import RSORegisterRequestSchema from "../model/external/request/rso/RSORegisterR
 
 import bson, { ObjectId } from 'bson';
 import BaseUserController from "./base/BaseUserController";
+import { RSOMemberType } from "../model/internal/rsoMember/RSOMemberType";
 
 /**
  * This class creates several properties responsible for rso-actions 

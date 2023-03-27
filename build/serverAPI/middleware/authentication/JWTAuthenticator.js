@@ -4,10 +4,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const ResponseCodes_1 = require("../../../utils/ResponseCodes");
-const BaseController_1 = __importDefault(require("../../controller/base/BaseController"));
+const BaseUserController_1 = __importDefault(require("../../controller/base/BaseUserController"));
 const JWTStorage_1 = __importDefault(require("./JWTStorage"));
-class JWTAuthenticator extends BaseController_1.default {
-    authenticate = (tokenCreator) => (req, res, next) => {
+class JWTAuthenticator extends BaseUserController_1.default {
+    constructor(database) {
+        super(database);
+    }
+    authenticate = (tokenCreator) => async (req, res, next) => {
         if (!req.headers.authorization) {
             return this.send(ResponseCodes_1.ResponseCodes.UNAUTHORIZED, res, "Token is invalid.");
         }
@@ -26,7 +29,14 @@ class JWTAuthenticator extends BaseController_1.default {
             JWTStorage_1.default.getInstance().getJWT(userIdentification.username)?.accessToken.token !== accessToken) {
             return this.send(ResponseCodes_1.ResponseCodes.UNAUTHORIZED, res, "Token is not assigned to the user.");
         }
-        req.serverUser = userIdentification;
+        let user;
+        try {
+            user = await this.requestGet(new Map([["username", userIdentification.username]]), res);
+        }
+        catch (response) {
+            return response;
+        }
+        req.serverUser = user;
         next();
     };
 }

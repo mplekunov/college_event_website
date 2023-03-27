@@ -14,7 +14,7 @@ export default class JWTStorage {
      * 
      * @returns JWTStorage object or undefined.
      */
-    static getInstance<T>(): JWTStorage {
+    static getInstance(): JWTStorage {
         if (JWTStorage.instance === undefined) {
             JWTStorage.instance = new JWTStorage();
         }

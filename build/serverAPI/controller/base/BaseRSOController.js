@@ -42,6 +42,14 @@ class BaseRSOController extends BaseController_1.default {
             return true;
         }, (error) => Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, this.getException(error))));
     }
+    async requestGetAll(parameters, res) {
+        return this.database.GetAll(parameters).then(async (rso) => {
+            if (rso === null) {
+                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.NOT_FOUND, res, "RSO could not be found."));
+            }
+            return rso;
+        }, (error) => Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, this.getException(error))));
+    }
     async requestGet(parameters, res) {
         return this.database.Get(parameters).then(async (rso) => {
             if (rso === null) {
