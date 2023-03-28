@@ -160,8 +160,7 @@ class AuthenticationController extends BaseUserController_1.default {
             let universitySchema;
             try {
                 universitySchema = await this.parseRegisterUniversityRequest(req, res);
-                let university = await this.universityController.requestCreate(universitySchema, res);
-                this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, university);
+                await this.universityController.requestCreate(universitySchema, res);
             }
             catch (response) {
                 return response;
