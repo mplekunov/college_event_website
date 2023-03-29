@@ -1,10 +1,14 @@
 import IUser from "./IUser";
 
 import BaseUserSchema from "./BaseUserSchema";
+import { ObjectId } from "bson";
+import { UserLevel } from "./UserLevel";
+import IBaseAffiliate from "../affiliate/IBaseAffiliate";
 
 export default class UserSchema extends BaseUserSchema implements IUser {
+    userID: ObjectId;
 
-    isVerified: boolean;
+    organizationsAffiliation: IBaseAffiliate[];
 
     constructor(
         firstName: string,
@@ -13,10 +17,14 @@ export default class UserSchema extends BaseUserSchema implements IUser {
         password: string,
         email: string,
         userLevel: UserLevel,
-        lastSeen: number
+        lastSeen: number,
+        userID: ObjectId,
+        universityAffiliation: IBaseAffiliate,
+        organizationsAffiliation: IBaseAffiliate[]
     ) {
-        super(firstName, lastName, username, password, email, userLevel, lastSeen);
+        super(firstName, lastName, username, password, email, userLevel, lastSeen, universityAffiliation);
         
-        this.isVerified = false;
+        this.organizationsAffiliation = organizationsAffiliation;
+        this.userID = userID;
     }
 }

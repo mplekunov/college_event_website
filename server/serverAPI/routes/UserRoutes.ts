@@ -16,6 +16,9 @@ import TokenCreator from '../../utils/TokenCreator';
 import IIdentification from '../model/internal/user/IIdentification';
 
 import UserDatabase from '../../database/UserDatabase';
+import UniversityDatabase from '../../database/UniversityDatabase';
+import LocationDatabase from '../../database/LocationDatabase';
+import RSODatabase from '../../database/RSODatabase';
 
 export const userRoute = express.Router();
 
@@ -24,20 +27,30 @@ let databaseName = process.env.DB_NAME;
 let username = process.env.DB_USERNAME;
 let password = process.env.DB_PASSWORD;
 
-let freeImageHostApiKey = process.env.FREE_IMAGE_HOST_API_KEY;
-
 let privateKey = process.env.PRIVATE_KEY_FOR_USER_TOKEN;
 
-const database = UserDatabase.connect(
+const userDatabase = UserDatabase.connect(
     databaseURL,
     databaseName,
     username,
-    password
+    password,
+    UniversityDatabase.connect(
+        databaseURL,
+        databaseName,
+        username,
+        password,
+        LocationDatabase.connect(
+            databaseURL,
+            databaseName,
+            username,
+            password
+        )
+    )
 );
 
-const userController = new UserController(database);
+const userController = new UserController(userDatabase);
 
-userRoute.use(new JWTAuthenticator().authenticate(new TokenCreator<IIdentification>(privateKey)));
+userRoute.use(new JWTAuthenticator(userDatabase).authenticate(new TokenCreator<IIdentification>(privateKey)));
 
 userRoute.use(express.json({ limit: '30mb' }));
 

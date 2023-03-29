@@ -1,14 +1,14 @@
 /**
  * Database interface describing full CRUD operations of the object with generic type T.
  */
-export default interface IDatabase<Type> {
+export default interface IDatabase<BaseType, Type> {
     /**
       * Retrieves general information about all T objects stored in the database. 
       * 
       * @param parameters query parameters used for searching.
       * @returns Promise filled with T or null if T objects weren't found.
       */    
-     GetAll(parameters?: Map<String, any>): Promise<Type[] | null>;
+     GetAll(parameters?: Map<String, any>): Promise<Promise<Type | null>[] | null>;
  
      /**
       * Retrieves complete information about specific user defined by T's _id.
@@ -33,7 +33,7 @@ export default interface IDatabase<Type> {
       * @throws IncorrectSchema exception when T object doesn't have correct format.
       * @returns Promise filled with T object or null if T object wasn't created.
       */    
-     Create(object: Type): Promise<Type| null>;
+     Create(object: BaseType): Promise<Type| null>;
  
      /**
       * Updates T object in the database
@@ -46,7 +46,7 @@ export default interface IDatabase<Type> {
       * @throws IncorrectIDFormat exception when id has incorrect format.
       * @returns Promise filled with updated T object or null if T object wasn't updated.
       */    
-     Update(id: string, object: Type): Promise<Type | null>;
+     Update(id: string, object: BaseType): Promise<Type | null>;
  
      /**
       * Deletes T object from database.

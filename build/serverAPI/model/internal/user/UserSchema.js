@@ -5,10 +5,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const BaseUserSchema_1 = __importDefault(require("./BaseUserSchema"));
 class UserSchema extends BaseUserSchema_1.default {
-    isVerified;
-    constructor(firstName, lastName, username, password, email, userLevel, lastSeen) {
-        super(firstName, lastName, username, password, email, userLevel, lastSeen);
-        this.isVerified = false;
+    userID;
+    organizationsAffiliation;
+    constructor(firstName, lastName, username, password, email, userLevel, lastSeen, userID, universityAffiliation, organizationsAffiliation) {
+        super(firstName, lastName, username, password, email, userLevel, lastSeen, universityAffiliation);
+        this.organizationsAffiliation = organizationsAffiliation;
+        this.userID = userID;
     }
 }
 exports.default = UserSchema;

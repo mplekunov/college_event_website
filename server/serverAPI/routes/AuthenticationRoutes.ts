@@ -12,6 +12,9 @@ import Encryptor from '../../utils/Encryptor';
 import TokenCreator from '../../utils/TokenCreator';
 
 import JWTAuthenticator from '../middleware/authentication/JWTAuthenticator';
+import UniversityDatabase from '../../database/UniversityDatabase';
+import LocationDatabase from '../../database/LocationDatabase';
+import UniversityController from '../controller/UniversityController';
 
 export const authenticationRoute = express.Router();
 
@@ -22,18 +25,35 @@ let password = process.env.DB_PASSWORD;
 
 let privateKey = process.env.PRIVATE_KEY_FOR_USER_TOKEN;
 
-const authenticationController = new AuthenticationController(
-    UserDatabase.connect(
+const universityDatabase = UniversityDatabase.connect(
+    databaseURL,
+    databaseName,
+    username,
+    password,
+    LocationDatabase.connect(
         databaseURL,
         databaseName,
         username,
         password
-    ),
-    new Encryptor(),
-    new TokenCreator(privateKey)
+    )
+); 
+
+const userDatabase = UserDatabase.connect(
+    databaseURL,
+    databaseName,
+    username,
+    password,
+    universityDatabase  
 );
 
-const authenticator = new JWTAuthenticator().authenticate(new TokenCreator(privateKey));
+const authenticationController = new AuthenticationController(
+    userDatabase,
+    new Encryptor(),
+    new TokenCreator(privateKey),
+    new UniversityController(universityDatabase)
+);
+
+const authenticator = new JWTAuthenticator(userDatabase).authenticate(new TokenCreator(privateKey));
 
 authenticationRoute.use(express.json({ limit: '30mb' }));
 

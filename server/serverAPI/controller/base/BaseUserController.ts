@@ -8,23 +8,26 @@ import IUser from "../../model/internal/user/IUser";
 import IUserResponse from "../../model/external/response/user/IUserResponse";
 
 import BaseController from "./BaseController";
+import IBaseUser from "../../model/internal/user/IBaseUser";
 
 export default class BaseUserController extends BaseController {
-    protected database: IDatabase<IUser>;
+    protected database: IDatabase<IBaseUser, IUser>;
 
-    constructor(database: IDatabase<IUser>) {
+    constructor(database: IDatabase<IBaseUser, IUser>) {
         super();
         this.database = database;
     }
 
     public convertToUserResponse(user: IUser): IUserResponse {
         return {
+            userID: user.userID,
             username: user.username,
             firstName: user.firstName,
             lastName: user.lastName,
             lastSeen: user.lastSeen,
             email: user.email,
-            userLevel: user.userLevel
+            userLevel: user.userLevel,
+            universityAffiliation: user.universityAffiliation,
         }
     }
 
@@ -54,7 +57,7 @@ export default class BaseUserController extends BaseController {
         }, (error) => Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, this.getException(error))));
     }
 
-    public async requestUpdate(id: string, user: IUser, res: Response): Promise<IUser> {
+    public async requestUpdate(id: string, user: IBaseUser, res: Response): Promise<IUser> {
         return this.database.Update(id, user).then(updatedUser => {
             if (updatedUser === null) {
                 return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, "User could not be updated."));
@@ -76,6 +79,7 @@ export default class BaseUserController extends BaseController {
 
     public async requestGet(parameters: Map<string, any>, res: Response): Promise<IUser> {
         return this.database.Get(parameters).then(async user => {
+
             if (user === null) {
                 return Promise.reject(this.send(ResponseCodes.NOT_FOUND, res, "User could not be found."));
             }

@@ -36,7 +36,7 @@ class UserController extends BaseUserController_1.default {
         let parameters = new Map([["username", req.serverUser.username]]);
         try {
             let user = await this.requestGet(parameters, res);
-            let result = await this.requestDelete(req.serverUser.username, res);
+            let result = await this.requestDelete(req.serverUser.userID.toString(), res);
             if (!result) {
                 return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "User could not be deleted.");
             }

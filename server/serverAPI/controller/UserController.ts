@@ -9,13 +9,14 @@ import IDatabase from '../../database/IDatabase';
 import IUser from "../model/internal/user/IUser";
 
 import BaseUserController from "./base/BaseUserController";
+import IBaseUser from "../model/internal/user/IBaseUser";
 
 /**
  * This class creates several properties responsible for user-actions 
  * provided to the user.
  */
 export default class UserController extends BaseUserController {
-    constructor(database: IDatabase<IUser>) {
+    constructor(database: IDatabase<IBaseUser, IUser>) {
         super(database);
     }
 
@@ -45,7 +46,7 @@ export default class UserController extends BaseUserController {
         try {
             let user = await this.requestGet(parameters, res);
 
-            let result = await this.requestDelete(req.serverUser.username, res)
+            let result = await this.requestDelete(req.serverUser.userID.toString(), res)
             if (!result) {
                 return this.send(ResponseCodes.BAD_REQUEST, res, "User could not be deleted.");
             }

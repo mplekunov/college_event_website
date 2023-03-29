@@ -1,6 +1,8 @@
+import IUser from "../../serverAPI/model/internal/user/IUser";
+
 declare module "express-serve-static-core" {
     interface Request {
-        serverUser: IIdentification;
+        serverUser: IUser;
     }
 }
 

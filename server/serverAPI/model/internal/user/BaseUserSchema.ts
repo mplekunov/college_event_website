@@ -1,11 +1,12 @@
-import { IsEmail, IsInt, IsNotEmpty, IsNumber, IsPositive, IsString } from "class-validator";
+import { IsEmail, IsInt, IsNotEmpty, IsNumber, IsPositive, IsString, ValidateNested } from "class-validator";
 
 import Schema from "../../Schema";
 
 import IBaseUser from "./IBaseUser";
-import ICredentials from "./ICredentials";
+import { UserLevel } from "./UserLevel";
+import IBaseAffiliate from "../affiliate/IBaseAffiliate";
 
-export default class BaseUserSchema extends Schema implements IBaseUser, ICredentials {
+export default class BaseUserSchema extends Schema implements IBaseUser {
     @IsString()
     @IsNotEmpty()
     firstName: string;
@@ -32,6 +33,8 @@ export default class BaseUserSchema extends Schema implements IBaseUser, ICreden
 
     userLevel: UserLevel;
 
+    universityAffiliation: IBaseAffiliate;
+
     constructor(
         firstName: string,
         lastName: string,
@@ -39,7 +42,8 @@ export default class BaseUserSchema extends Schema implements IBaseUser, ICreden
         password: string,
         email: string,
         userLevel: UserLevel,
-        lastSeen: number
+        lastSeen: number,
+        universityAffiliation: IBaseAffiliate
     ) {
         super();
         
@@ -50,5 +54,6 @@ export default class BaseUserSchema extends Schema implements IBaseUser, ICreden
         this.lastSeen = lastSeen;
         this.email = email;
         this.userLevel = userLevel;
+        this.universityAffiliation = universityAffiliation;
     }
 }

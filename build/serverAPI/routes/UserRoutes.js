@@ -37,16 +37,17 @@ const UserController_1 = __importDefault(require("../controller/UserController")
 const JWTAuthenticator_1 = __importDefault(require("../middleware/authentication/JWTAuthenticator"));
 const TokenCreator_1 = __importDefault(require("../../utils/TokenCreator"));
 const UserDatabase_1 = __importDefault(require("../../database/UserDatabase"));
+const UniversityDatabase_1 = __importDefault(require("../../database/UniversityDatabase"));
+const LocationDatabase_1 = __importDefault(require("../../database/LocationDatabase"));
 exports.userRoute = express_1.default.Router();
 let databaseURL = process.env.DB_CONNECTION_STRING;
 let databaseName = process.env.DB_NAME;
 let username = process.env.DB_USERNAME;
 let password = process.env.DB_PASSWORD;
-let freeImageHostApiKey = process.env.FREE_IMAGE_HOST_API_KEY;
 let privateKey = process.env.PRIVATE_KEY_FOR_USER_TOKEN;
-const database = UserDatabase_1.default.connect(databaseURL, databaseName, username, password);
-const userController = new UserController_1.default(database);
-exports.userRoute.use(new JWTAuthenticator_1.default().authenticate(new TokenCreator_1.default(privateKey)));
+const userDatabase = UserDatabase_1.default.connect(databaseURL, databaseName, username, password, UniversityDatabase_1.default.connect(databaseURL, databaseName, username, password, LocationDatabase_1.default.connect(databaseURL, databaseName, username, password)));
+const userController = new UserController_1.default(userDatabase);
+exports.userRoute.use(new JWTAuthenticator_1.default(userDatabase).authenticate(new TokenCreator_1.default(privateKey)));
 exports.userRoute.use(express_1.default.json({ limit: '30mb' }));
 exports.userRoute.route('/')
     .get(userController.get)

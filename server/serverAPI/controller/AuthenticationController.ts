@@ -3,15 +3,12 @@ import { ResponseCodes } from "../../utils/ResponseCodes";
 
 import Encryptor from "../../utils/Encryptor";
 import TokenCreator from "../../utils/TokenCreator";
-import Random from "../../utils/Random";
 
 import Token from "../model/internal/token/Token";
 
-import UserSchema from "../model/internal/user/UserSchema";
-
 import LoginRequestSchema from "../model/external/request/authentication/LoginRequest";
 import RefreshJWTRequestSchema from "../model/external/request/authentication/RefreshJWTRequest";
-import RegisterRequestSchema from "../model/external/request/authentication/RegisterRequest";
+import UserRegisterRequestSchema from "../model/external/request/authentication/UserRegisterRequest";
 
 import IDatabase from "../../database/IDatabase";
 import IIdentification from "../model/internal/user/IIdentification";
@@ -21,6 +18,15 @@ import BaseUserController from "./base/BaseUserController";
 
 import JWTStorage from "../middleware/authentication/JWTStorage";
 import UserToken from "../model/internal/userToken/UserToken";
+import IBaseUser from "../model/internal/user/IBaseUser";
+import BaseUniversityAffiliateSchema from "../model/internal/affiliate/UniversityAffiliate";
+import { UserLevel } from "../model/internal/user/UserLevel";
+import BaseUserSchema from "../model/internal/user/BaseUserSchema";
+import BaseUniversitySchema from "../model/internal/university/BaseUniversitySchema";
+import BaseLocationSchema from "../model/internal/location/BaseLocationSchema";
+import UniversityController from "./UniversityController";
+import { ObjectId } from "bson";
+import IBaseAffiliate from "../model/internal/affiliate/IBaseAffiliate";
 
 /**
  * This class creates several properties responsible for authentication actions 
@@ -30,28 +36,26 @@ export default class AuthenticationController extends BaseUserController {
     private encryptor: Encryptor;
     private tokenCreator: TokenCreator<IIdentification>;
 
-    protected static verificationCodesMap: Map<string, { code: number, generationTime: number, attempts: number }> = new Map();
-    protected verificationCodeLifetimeInMilliseconds = 5 * 60 * 1000;
-    protected maxAttemptsPerVerificationCode = 3;
-
     protected accessTokenTimeoutInSeconds = 24 * 60 * 60;
     protected refreshTokenTimeoutInSeconds = 24 * 60 * 60;
 
-    protected minVerificationCode = 100000;
-    protected maxVerificationCode = 999999;
+    private universityController: UniversityController;
 
     constructor(
-        database: IDatabase<IUser>,
+        database: IDatabase<IBaseUser, IUser>,
         encryptor: Encryptor,
-        tokenCreator: TokenCreator<IIdentification>
+        tokenCreator: TokenCreator<IIdentification>,
+        universityController: UniversityController
     ) {
         super(database);
+
+        this.universityController = universityController;
 
         this.encryptor = encryptor;
         this.tokenCreator = tokenCreator;
     }
 
-    protected parseLoginRequest(req: Request, res: Response): Promise<LoginRequestSchema> {
+    protected parseUserLoginRequest(req: Request, res: Response): Promise<LoginRequestSchema> {
         let request = new LoginRequestSchema(
             req.body?.username,
             req.body?.password
@@ -60,15 +64,38 @@ export default class AuthenticationController extends BaseUserController {
         return this.verifySchema(request, res);;
     }
 
+    protected parseUniversityRegisterRequest(req: Request, res: Response): Promise<BaseUniversitySchema> {
+        let request = new BaseUniversitySchema(
+            req.body?.university?.name,
+            req.body?.university?.description,
+            new BaseLocationSchema(
+                req.body?.university?.location?.address,
+                parseFloat(req.body?.university?.location?.longitude),
+                parseFloat(req.body?.university?.location?.latitude)
+            ),
+            req.body?.university?.numStudents
+        );
 
-    protected parseRegisterRequest(req: Request, res: Response): Promise<RegisterRequestSchema> {
-        let request = new RegisterRequestSchema(
+        return this.verifySchema(request, res);
+    }
+
+    protected parseUniversityRegisterAffiliateRequest(req: Request, res: Response): Promise<BaseUniversityAffiliateSchema> {
+        let request = new BaseUniversityAffiliateSchema(
+            req.body?.university?.name,
+            req.body?.university?.universityID
+        );
+
+        return this.verifySchema(request, res);
+    }
+
+    protected parseUserRegisterRequest(req: Request, res: Response): Promise<UserRegisterRequestSchema> {
+        let request = new UserRegisterRequestSchema(
             req.body?.firstName,
             req.body?.lastName,
             req.body?.username,
             req.body?.password,
             req.body?.email,
-            UserLevel.STUDENT
+            parseInt(req.body?.userLevel) as UserLevel
         );
 
         return this.verifySchema(request, res);
@@ -98,7 +125,7 @@ export default class AuthenticationController extends BaseUserController {
 
         return userToken;
     }
- 
+
     /**
      * Logs client into the server using token from authorization header.
      * 
@@ -110,7 +137,7 @@ export default class AuthenticationController extends BaseUserController {
         let user: IUser;
 
         try {
-            parsedRequest = await this.parseLoginRequest(req, res);
+            parsedRequest = await this.parseUserLoginRequest(req, res);
             user = await this.requestGet(new Map([["username", parsedRequest.username]]), res);
         } catch (response) {
             return response;
@@ -120,10 +147,6 @@ export default class AuthenticationController extends BaseUserController {
 
         if (!result) {
             return this.send(ResponseCodes.UNAUTHORIZED, res, `User credentials are incorrect.`);
-        }
-
-        if (!user.isVerified) {
-            return this.send(ResponseCodes.FORBIDDEN, res, "Account is not verified.");
         }
 
         let token = this.createToken({ username: user.username });
@@ -138,16 +161,12 @@ export default class AuthenticationController extends BaseUserController {
         user.lastSeen = Date.now();
 
         try {
-            await this.requestUpdate(user.username, user, res);
+            await this.requestUpdate(user.userID.toString(), user, res);
         } catch (response) {
             return response;
         }
 
         return this.send(ResponseCodes.OK, res, token);
-    }
-
-    private convertToMinutes(timeInMilliseconds: number): number {
-        return Math.ceil(timeInMilliseconds / 1000 / 60)
     }
 
     /**
@@ -197,14 +216,14 @@ export default class AuthenticationController extends BaseUserController {
      * @param res Response parameter that holds information about response.
      */
     register = async (req: Request, res: Response) => {
-        let parsedRequest: RegisterRequestSchema;
+        let parsedUserRequest: UserRegisterRequestSchema;
         let userExists: boolean;
         let emailExists: boolean;
 
         try {
-            parsedRequest = await this.parseRegisterRequest(req, res);
-            userExists = await this.usernameExists(parsedRequest.username, res);
-            emailExists = await this.emailExists(parsedRequest.email, res);
+            parsedUserRequest = await this.parseUserRegisterRequest(req, res);
+            userExists = await this.usernameExists(parsedUserRequest.username, res);
+            emailExists = await this.emailExists(parsedUserRequest.email, res);
         } catch (response) {
             return response;
         }
@@ -217,22 +236,49 @@ export default class AuthenticationController extends BaseUserController {
             return this.send(ResponseCodes.BAD_REQUEST, res, `User with such email already exists.`);
         }
 
-        let internalUser = new UserSchema(
-            parsedRequest.firstName,
-            parsedRequest.lastName,
-            parsedRequest.username,
-            parsedRequest.password,
-            parsedRequest.email,
-            UserLevel.STUDENT,
-            parsedRequest.lastSeen
+        let universityAffiliate: IBaseAffiliate;
+
+        if (parsedUserRequest.userLevel === UserLevel.SUPER_ADMIN) {
+            let universitySchema: BaseUniversitySchema;
+
+            let university;
+            try {
+                universitySchema = await this.parseUniversityRegisterRequest(req, res);
+
+                university = await this.universityController.requestCreate(universitySchema, res);
+            } catch (response) {
+                return response;
+            }
+
+            universityAffiliate = {
+                organizationID: university.universityID,
+                organizationName: university.name,
+            };
+        } else {
+            universityAffiliate = await this.parseUniversityRegisterAffiliateRequest(req, res);
+        }
+
+        let internalUser = new BaseUserSchema(
+            parsedUserRequest.firstName,
+            parsedUserRequest.lastName,
+            parsedUserRequest.username,
+            parsedUserRequest.password,
+            parsedUserRequest.email,
+            parsedUserRequest.userLevel,
+            parsedUserRequest.lastSeen,
+            universityAffiliate
         );
 
         internalUser.password = await this.encryptor.encrypt(internalUser.password);
 
-        let createdUser = await this.database.Create(internalUser);
+        try {
+            let createdUser = await this.database.Create(internalUser);
 
-        if (createdUser === null) {
-            return this.send(ResponseCodes.BAD_REQUEST, res, `User could not be created.`);
+            if (createdUser === null) {
+                return this.send(ResponseCodes.BAD_REQUEST, res, `User could not be created.`);
+            }
+        } catch (error) {
+            return this.send(ResponseCodes.BAD_REQUEST, res, error);
         }
 
         return this.send(ResponseCodes.CREATED, res, "User has been created.");
