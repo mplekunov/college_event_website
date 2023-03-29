@@ -42,14 +42,14 @@ class UniversityDatabase {
     static locationDatabase;
     mysqlPool;
     constructor(mysqlHost, databaseName, username, password, locationDatabase) {
-        let mysqlConnection = mysql_1.default.createPool({
+        let mysqlPool = mysql_1.default.createPool({
             host: mysqlHost,
             database: databaseName,
             user: username,
             password: password
         });
         UniversityDatabase.locationDatabase = locationDatabase;
-        this.mysqlPool = mysqlConnection;
+        this.mysqlPool = mysqlPool;
     }
     /**
      * Retrieves current instance of the UserDatabase if such exists.
@@ -96,8 +96,8 @@ class UniversityDatabase {
                 return Promise.resolve(null);
             }
             let universities = [];
-            results.forEach(async (element) => universities.push(await this.parseUniversity(element)));
-            return Promise.resolve(universities);
+            results.forEach(async (element) => universities.push(this.parseUniversity(element)));
+            return universities;
         });
         return Promise.resolve(null);
     }
@@ -141,8 +141,6 @@ class UniversityDatabase {
                 VALUES('${(new bson_1.ObjectId()).toString()}', '${object.name}', '${object.description}', '${location.locationID.toString()}', ${object.numStudents});`, async (error, results, fields) => {
                     connection.release();
                     if (error) {
-                        console.log(error);
-                        console.log(location);
                         return reject(error);
                     }
                     return resolve(this.Get(new Map([['name', object.name]])));

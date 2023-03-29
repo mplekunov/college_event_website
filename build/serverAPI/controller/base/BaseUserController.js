@@ -13,6 +13,7 @@ class BaseUserController extends BaseController_1.default {
     }
     convertToUserResponse(user) {
         return {
+            userID: user.userID,
             username: user.username,
             firstName: user.firstName,
             lastName: user.lastName,

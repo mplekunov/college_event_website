@@ -32,13 +32,21 @@ class AuthenticationController extends BaseUserController_1.default {
         this.encryptor = encryptor;
         this.tokenCreator = tokenCreator;
     }
-    parseLoginRequest(req, res) {
+    parseUserLoginRequest(req, res) {
         let request = new LoginRequest_1.default(req.body?.username, req.body?.password);
         return this.verifySchema(request, res);
         ;
     }
-    parseRegisterRequest(req, res) {
-        let request = new UserRegisterRequest_1.default(req.body?.firstName, req.body?.lastName, req.body?.username, req.body?.password, req.body?.email, parseInt(req.body?.userLevel), new UniversityAffiliate_1.default(req.body?.university.name, parseInt(req.body?.university.affiliationType)));
+    parseUniversityRegisterRequest(req, res) {
+        let request = new BaseUniversitySchema_1.default(req.body?.university?.name, req.body?.university?.description, new BaseLocationSchema_1.default(req.body?.university?.location?.address, parseFloat(req.body?.university?.location?.longitude), parseFloat(req.body?.university?.location?.latitude)), req.body?.university?.numStudents);
+        return this.verifySchema(request, res);
+    }
+    parseUniversityRegisterAffiliateRequest(req, res) {
+        let request = new UniversityAffiliate_1.default(req.body?.university?.name, req.body?.university?.universityID);
+        return this.verifySchema(request, res);
+    }
+    parseUserRegisterRequest(req, res) {
+        let request = new UserRegisterRequest_1.default(req.body?.firstName, req.body?.lastName, req.body?.username, req.body?.password, req.body?.email, parseInt(req.body?.userLevel));
         return this.verifySchema(request, res);
     }
     parseRefreshJWTRequest(req, res) {
@@ -63,7 +71,7 @@ class AuthenticationController extends BaseUserController_1.default {
         let parsedRequest;
         let user;
         try {
-            parsedRequest = await this.parseLoginRequest(req, res);
+            parsedRequest = await this.parseUserLoginRequest(req, res);
             user = await this.requestGet(new Map([["username", parsedRequest.username]]), res);
         }
         catch (response) {
@@ -127,10 +135,6 @@ class AuthenticationController extends BaseUserController_1.default {
             return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Could not perform logout operation.");
         }
     };
-    parseRegisterUniversityRequest(req, res) {
-        let request = new BaseUniversitySchema_1.default(req.body?.university?.name, req.body?.university?.description, new BaseLocationSchema_1.default(req.body?.university?.location?.address, parseFloat(req.body?.university?.location?.longitude), parseFloat(req.body?.university?.location?.latitude)), req.body?.university?.numStudents);
-        return this.verifySchema(request, res);
-    }
     /**
      * Registers client account on the server.
      *
@@ -138,13 +142,13 @@ class AuthenticationController extends BaseUserController_1.default {
      * @param res Response parameter that holds information about response.
      */
     register = async (req, res) => {
-        let parsedRequest;
+        let parsedUserRequest;
         let userExists;
         let emailExists;
         try {
-            parsedRequest = await this.parseRegisterRequest(req, res);
-            userExists = await this.usernameExists(parsedRequest.username, res);
-            emailExists = await this.emailExists(parsedRequest.email, res);
+            parsedUserRequest = await this.parseUserRegisterRequest(req, res);
+            userExists = await this.usernameExists(parsedUserRequest.username, res);
+            emailExists = await this.emailExists(parsedUserRequest.email, res);
         }
         catch (response) {
             return response;
@@ -155,17 +159,26 @@ class AuthenticationController extends BaseUserController_1.default {
         if (emailExists) {
             return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, `User with such email already exists.`);
         }
-        let internalUser = new BaseUserSchema_1.default(parsedRequest.firstName, parsedRequest.lastName, parsedRequest.username, parsedRequest.password, parsedRequest.email, parsedRequest.userLevel, parsedRequest.lastSeen, parsedRequest.universityAffiliation);
-        if (internalUser.userLevel === UserLevel_1.UserLevel.ADMIN) {
+        let universityAffiliate;
+        if (parsedUserRequest.userLevel === UserLevel_1.UserLevel.SUPER_ADMIN) {
             let universitySchema;
+            let university;
             try {
-                universitySchema = await this.parseRegisterUniversityRequest(req, res);
-                await this.universityController.requestCreate(universitySchema, res);
+                universitySchema = await this.parseUniversityRegisterRequest(req, res);
+                university = await this.universityController.requestCreate(universitySchema, res);
             }
             catch (response) {
                 return response;
             }
+            universityAffiliate = {
+                organizationID: university.universityID,
+                organizationName: university.name,
+            };
         }
+        else {
+            universityAffiliate = await this.parseUniversityRegisterAffiliateRequest(req, res);
+        }
+        let internalUser = new BaseUserSchema_1.default(parsedUserRequest.firstName, parsedUserRequest.lastName, parsedUserRequest.username, parsedUserRequest.password, parsedUserRequest.email, parsedUserRequest.userLevel, parsedUserRequest.lastSeen, universityAffiliate);
         internalUser.password = await this.encryptor.encrypt(internalUser.password);
         try {
             let createdUser = await this.database.Create(internalUser);

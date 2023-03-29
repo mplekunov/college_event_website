@@ -9,5 +9,5 @@ import IBaseUser from "./IBaseUser";
 export default interface IUser extends IBaseUser {
     userID: ObjectId;
 
-    organizationsAffiliation: Array<IBaseAffiliate<RSOMemberType>>;
+    organizationsAffiliation: Array<IBaseAffiliate>;
 }

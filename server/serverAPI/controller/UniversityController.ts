@@ -4,16 +4,6 @@ import { ResponseCodes } from "../../utils/ResponseCodes";
 
 import IDatabase from '../../database/IDatabase';
 
-import BaseRSOController from "./base/BaseRSOController";
-import IRSO from "../model/internal/rso/IRSO";
-import IMember from "../model/internal/member/IMember";
-import IAffiliate from "../model/internal/affiliate/IAffiliate";
-import IBaseRSO from "../model/internal/rso/IBaseRSO";
-import RSORegisterRequestSchema from "../model/external/request/rso/RSORegisterRequest";
-
-import bson, { ObjectId } from 'bson';
-import BaseUserController from "./base/BaseUserController";
-import { RSOMemberType } from "../model/internal/rsoMember/RSOMemberType";
 import BaseUniversityController from "./base/BaseUniversityController";
 import IBaseUniversity from "../model/internal/university/IBaseUniversity";
 import IUniversity from "../model/internal/university/IUniversity";

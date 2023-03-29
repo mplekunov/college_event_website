@@ -72,7 +72,7 @@ export default class LocationDatabase implements IDatabase<IBaseLocation, ILocat
         };
     }
 
-    async GetAll(parameters?: Map<String, any> | undefined): Promise<ILocation[] | null> {
+    async GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<ILocation | null>[] | null> {
         await this.mysqlPool.query(`SELECT * FROM Location`,  (error, results, fields) => {
             if (error || !Array.isArray(results) || results.length === 0) {
                 return Promise.resolve(null);

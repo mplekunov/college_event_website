@@ -1,4 +1,6 @@
-export default interface IBaseAffiliate<T> {
+import { ObjectId } from "bson";
+
+export default interface IBaseAffiliate {
+    organizationID: ObjectId;
     organizationName: string;
-    affiliationType: T;
 }

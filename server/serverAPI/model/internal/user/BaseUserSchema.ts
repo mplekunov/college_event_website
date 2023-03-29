@@ -3,7 +3,6 @@ import { IsEmail, IsInt, IsNotEmpty, IsNumber, IsPositive, IsString, ValidateNes
 import Schema from "../../Schema";
 
 import IBaseUser from "./IBaseUser";
-import { UniversityMemberType } from "../universityMember/UniversityMemberType";
 import { UserLevel } from "./UserLevel";
 import IBaseAffiliate from "../affiliate/IBaseAffiliate";
 
@@ -34,7 +33,7 @@ export default class BaseUserSchema extends Schema implements IBaseUser {
 
     userLevel: UserLevel;
 
-    universityAffiliation: IBaseAffiliate<UniversityMemberType>;
+    universityAffiliation: IBaseAffiliate;
 
     constructor(
         firstName: string,
@@ -44,7 +43,7 @@ export default class BaseUserSchema extends Schema implements IBaseUser {
         email: string,
         userLevel: UserLevel,
         lastSeen: number,
-        universityAffiliation: IBaseAffiliate<UniversityMemberType>
+        universityAffiliation: IBaseAffiliate
     ) {
         super();
         

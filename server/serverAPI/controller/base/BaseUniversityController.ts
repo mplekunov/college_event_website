@@ -55,13 +55,26 @@ export default class BaseUniversityController extends BaseController {
     }
 
     public async requestGetAll(parameters: Map<string, any>, res: Response): Promise<IBaseUniversity[]> {
-        return this.database.GetAll(parameters).then(async universities => {
-            if (universities === null) {
-                return Promise.reject(this.send(ResponseCodes.NOT_FOUND, res, "Universities could not be found."));
+        try {
+            let promiseList = await this.database.GetAll(parameters);
+
+            if (promiseList === null) {
+                return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, "Universities could not be found."));
             }
 
-            return universities;
-        }, (error) => Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, this.getException(error))));
+            let objects: IBaseUniversity[] = [];
+
+            promiseList.forEach(async promise => {
+                let obj = await promise;
+                if (obj !== null) {
+                    objects.push(obj);
+                }
+            });
+            return objects;
+
+        } catch (error) {
+            return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, this.getException(error)));
+        }
     }
 
     public async requestGet(parameters: Map<string, any>, res: Response): Promise<IUniversity> {

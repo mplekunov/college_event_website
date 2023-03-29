@@ -9,7 +9,7 @@ import IRSO from "../../model/internal/rso/IRSO";
 import IBaseRSO from "../../model/internal/rso/IBaseRSO";
 
 export default class BaseRSOController extends BaseController {
-    protected database: IDatabase<IRSO, IRSO>;
+    protected database: IDatabase<IBaseRSO, IRSO>;
 
     constructor(database: IDatabase<IBaseRSO, IRSO>) {
         super();
@@ -24,7 +24,7 @@ export default class BaseRSOController extends BaseController {
         });
     }
 
-    public async requestCreate(rso: IRSO, res: Response): Promise<IRSO> {
+    public async requestCreate(rso: IBaseRSO, res: Response): Promise<IRSO> {
         return this.database.Create(rso).then(createdRSO => {
             if (createdRSO === null) {
                 return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, "RSO could not be created."));
@@ -34,7 +34,7 @@ export default class BaseRSOController extends BaseController {
         }, (error) => Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, this.getException(error))));
     }
 
-    public async requestUpdate(id: string, rso: IRSO, res: Response): Promise<IRSO> {
+    public async requestUpdate(id: string, rso: IBaseRSO, res: Response): Promise<IRSO> {
         return this.database.Update(id, rso).then(updatedRSO => {
             if (updatedRSO === null) {
                 return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, "RSO could not be updated."));
@@ -55,13 +55,30 @@ export default class BaseRSOController extends BaseController {
     }
 
     public async requestGetAll(parameters: Map<string, any>, res: Response): Promise<IRSO[]> {
-        return this.database.GetAll(parameters).then(async rso => {
-            if (rso === null) {
-                return Promise.reject(this.send(ResponseCodes.NOT_FOUND, res, "RSO could not be found."));
+        try {
+            let promiseList: Promise<IRSO | null>[] | null = await this.database.GetAll(parameters);
+
+            console.log(promiseList);
+
+            if (promiseList === null) {
+                return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, "RSO could not be found."));
             }
 
-            return rso;
-        }, (error) => Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, this.getException(error))));
+            let objects: IRSO[] = [];
+
+            for (const promise of promiseList) {
+                let obj = await promise;
+
+                if (obj !== null) {
+                    objects.push(obj);
+                }
+            }
+
+            return objects;
+
+        } catch (error) {
+            return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, this.getException(error)));
+        }
     }
 
     public async requestGet(parameters: Map<string, any>, res: Response): Promise<IRSO> {

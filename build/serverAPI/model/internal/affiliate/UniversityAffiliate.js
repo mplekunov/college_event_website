@@ -13,11 +13,11 @@ const class_validator_1 = require("class-validator");
 const Schema_1 = __importDefault(require("../../Schema"));
 class BaseUniversityAffiliateSchema extends Schema_1.default {
     organizationName;
-    affiliationType;
-    constructor(organization, affiliationType) {
+    organizationID;
+    constructor(organizationName, organizationID) {
         super();
-        this.organizationName = organization;
-        this.affiliationType = affiliationType;
+        this.organizationName = organizationName;
+        this.organizationID = organizationID;
     }
 }
 __decorate([

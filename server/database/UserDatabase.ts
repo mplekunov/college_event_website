@@ -10,7 +10,6 @@ import IBaseUniversity from '../serverAPI/model/internal/university/IBaseUnivers
 import IAffiliate from '../serverAPI/model/internal/affiliate/IAffiliate';
 import IMember from '../serverAPI/model/internal/member/IMember';
 import IBaseRSO from '../serverAPI/model/internal/rso/IBaseRSO';
-import { UniversityMemberType } from '../serverAPI/model/internal/universityMember/UniversityMemberType';
 import { RSOMemberType } from '../serverAPI/model/internal/rsoMember/RSOMemberType';
 import IUniversity from '../serverAPI/model/internal/university/IUniversity';
 import { ObjectId } from 'bson';
@@ -26,7 +25,7 @@ import IBaseAffiliate from '../serverAPI/model/internal/affiliate/IBaseAffiliate
 export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
     private static instance?: UserDatabase;
     private static universityDatabase: IDatabase<IBaseUniversity, IUniversity>;
-    
+
     private mysqlPool: mysql.Pool;
 
     private constructor(
@@ -84,9 +83,9 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
             universityAffiliation = await this.parseUniversity(result);
             organizationsAffiliation = await this.parseOrganizations(result)
         } catch (error) {
-            return Promise.reject(`User creation: ${error}`);
+            return Promise.reject(`UserDatabase: ${error}`);
         }
-        
+
         return {
             email: result.email,
             firstName: result.firstName,
@@ -101,14 +100,14 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
         };
     }
 
-    private async parseOrganizations(result: any): Promise<IBaseAffiliate<RSOMemberType>[]> {
+    private async parseOrganizations(result: any): Promise<IBaseAffiliate[]> {
         let memberInfo: any;
-        
+
         try {
             memberInfo = await new Promise((resolve, reject) =>
                 this.mysqlPool.getConnection((err, connection) => {
                     if (err) {
-                        return reject(`User creation: ${err}`);
+                        return reject(`UserDatabase: ${err}`);
                     }
 
                     connection.query(`SELECT * FROM RSO_Members WHERE userID = '${result.userID}';`,
@@ -127,31 +126,31 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
             return Promise.reject(error);
         }
 
-        let organizations: IBaseAffiliate<RSOMemberType>[] = [];
+        let organizations: IBaseAffiliate[] = [];
 
         memberInfo.forEach(async (element: any) => {
             organizations.push({
-                affiliationType: parseInt(element.memberType),
-                organizationName: element.rsoName
+                organizationName: element.organizationName,
+                organizationID: element.rsoID
             });
         });
 
         return organizations;
     }
 
-    private async getUniversityMemberInfo(userID: string): Promise<any> {
+    private async getUniversityMemberInfo(userID: ObjectId): Promise<any> {
         return new Promise((resolve, reject) =>
             this.mysqlPool.getConnection((err, connection) => {
                 if (err) {
-                    return reject(`User creation: ${err}`);
+                    return reject(`UserDatabase: ${err}`);
                 }
 
-                connection.query(`SELECT * FROM University_Members WHERE userID = '${userID}';`,
+                connection.query(`SELECT * FROM University_Members WHERE userID = '${userID.toString()}';`,
                     (error, results, fields) => {
                         connection.release();
-                        
+
                         if (error || !Array.isArray(results) || results.length === 0) {
-                            return reject("User creation: Could not find university member info.");
+                            return reject("UserDatabase: Could not find university member info.");
                         }
 
 
@@ -161,20 +160,20 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
         );
     }
 
-    private async createUniveristyMemberInfo(userID: string, universityID: string, universityName: string, memberType: UniversityMemberType): Promise<any> {
+    private async createUniveristyMemberInfo(userID: ObjectId, universityID: ObjectId, universityName: string): Promise<any> {
         return new Promise((resolve, reject) =>
             this.mysqlPool.getConnection((err, connection) => {
                 if (err) {
-                    return reject(`User creation: ${err}`);
+                    return reject(`UserDatabase: ${err}`);
                 }
 
-                connection.query(`INSERT INTO University_Members (userID, memberType, universityName, universityID) 
-                VALUES('${userID}', ${memberType}, '${universityName}', '${universityID}');`,
+                connection.query(`INSERT INTO University_Members (userID, universityID, universityName) 
+                VALUES('${userID.toString()}', '${universityID.toString()}', '${universityName}');`,
                     (error, results, fields) => {
                         connection.release();
 
                         if (error) {
-                            return reject("User creation: Could not create university member info.");
+                            return reject("UserDatabase: Could not create university member info.");
                         }
 
                         return resolve(this.getUniversityMemberInfo(userID));
@@ -183,35 +182,43 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
         );
     }
 
-    private async parseUniversity(result: any): Promise<IBaseAffiliate<UniversityMemberType>> {
+    private async parseUniversity(result: any): Promise<IBaseAffiliate> {
         let memberInfo: any;
 
         try {
             memberInfo = await this.getUniversityMemberInfo(result.userID);
         } catch (error) {
-            return Promise.reject(`User creation: ${error}`);
+            return Promise.reject(`UserDatabase: ${error}`);
         }
 
         return {
             organizationName: memberInfo.universityName,
-            affiliationType: parseInt(memberInfo.memberType)
+            organizationID: new ObjectId(memberInfo.universityID)
         };
     }
 
-    async GetAll(parameters?: Map<String, any> | undefined): Promise<IUser[] | null> {
-        await this.mysqlPool.query(`SELECT * FROM User`, (error, results, fields) => {
-            if (error || !Array.isArray(results) || results.length === 0) {
-                return Promise.resolve(null);
+    async GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IUser | null>[] | null> {
+        let query = parameters ? this.getSearchQuery(parameters) : "";
+
+        return new Promise((resolve, reject) => this.mysqlPool.getConnection((err, connection) => {
+            if (err) {
+                return reject(`UserDatabase: ${err}`);
             }
 
-            let users: IUser[] = [];
+            connection.query(`SELECT * FROM User WHERE ${query}`, (error, results, fields) => {
+                connection.release();
 
-            results.forEach(async (element: any) => users.push(await this.parseUser(element)));
+                if (error || !Array.isArray(results) || results.length === 0) {
+                    return resolve([]);
+                }
 
-            return Promise.resolve(users);
-        });
+                let users: Promise<IUser>[] = [];
 
-        return Promise.resolve(null);
+                results.forEach(async (element: any) => users.push(this.parseUser(element)));
+
+                return resolve(users);
+            });
+        }));
     }
 
     private getSearchQuery(parameters: Map<String, any>): string {
@@ -224,12 +231,12 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
     }
 
     async Get(parameters: Map<String, any>): Promise<IUser | null> {
-        let query = this.getSearchQuery(parameters);
+        let query = parameters ? this.getSearchQuery(parameters) : "";
 
         return new Promise((resolve, reject) => {
             this.mysqlPool.getConnection((err, connection) => {
                 if (err) {
-                    return reject(`User creation: ${err}`);
+                    return reject(`UserDatabase: ${err}`);
                 }
 
                 connection.query(`SELECT * FROM User WHERE ${query} LIMIT 1;`, (error, results, fields) => {
@@ -238,7 +245,7 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
                     if (error || !Array.isArray(results) || results.length === 0) {
                         return resolve(null);
                     }
-                    
+
                     return resolve(this.parseUser(results[0]));
                 });
             });
@@ -249,44 +256,48 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
         return new Promise((resolve, reject) => {
             this.mysqlPool.getConnection(async (err, connection) => {
                 if (err) {
-                    return reject(`User creation: ${err}`);
+                    return reject(`UserDatabase: ${err}`);
                 }
 
                 let university: IUniversity | null;
 
                 try {
-                    university = await UserDatabase.universityDatabase.Get(new Map([['name', object.universityAffiliation.organizationName]]));     
+                    university = await UserDatabase.universityDatabase.Get(new Map([['universityID', object.universityAffiliation.organizationID]]));
                 } catch (response) {
-                    return reject(`User creation: ${response}`);
+                    return reject(`UserDatabase: ${response}`);
                 }
 
-                let userID = (new ObjectId()).toString();
+                let userID = new ObjectId();
+
+                if (university === null) {
+                    return reject('UserDatabase: University could not be found.');
+                }
 
                 connection.query(`INSERT INTO User (userID, firstName, lastName, lastSeen, userLevel, username, password, email) 
-                VALUES('${userID}', '${object.firstName}', '${object.lastName}', ${object.lastSeen}, ${object.userLevel}, '${object.username}', '${object.password}', '${object.email}');`,
+                VALUES('${userID.toString()}', '${object.firstName}', '${object.lastName}', ${object.lastSeen}, ${object.userLevel}, '${object.username}', '${object.password}', '${object.email}');`,
                     async (error, results, fields) => {
                         connection.release();
 
                         if (error) {
-                            return reject(`User creation: ${error}`);
+                            return reject(`UserDatabase: ${error}`);
                         }
-                        
+
                         try {
                             if (university === null) {
-                                return reject('User creation: University could not be found.');
+                                return reject('UserDatabase: University could not be found.');
                             }
 
-                            await this.createUniveristyMemberInfo(userID, university.universityID.toString(), university.name, object.universityAffiliation.affiliationType);
+                            await this.createUniveristyMemberInfo(userID, university.universityID, university.name);
 
                             let user = await this.Get(new Map([['username', object.username]]));
-    
+
                             if (user === null) {
-                                return reject('User creation: User could not be found.');
+                                return reject('UserDatabase: User could not be found.');
                             }
 
                             return resolve(user);
-                        } catch(error) {
-                            return reject(`User creation: ${error}`);
+                        } catch (error) {
+                            return reject(`UserDatabase: ${error}`);
                         }
                     }
                 );
@@ -306,7 +317,7 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
                         connection.release();
 
                         if (error) {
-                            return reject(`User creation: ${error}`);
+                            return reject(`UserDatabase: ${error}`);
                         }
 
                         return resolve(this.Get(new Map([['userID', id]])));
@@ -320,7 +331,7 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
         return new Promise<boolean>((resolve, reject) => {
             this.mysqlPool.getConnection((err, connection) => {
                 if (err) {
-                    return reject(`User creation: ${err}`);
+                    return reject(`UserDatabase: ${err}`);
                 }
 
                 connection.query(`DELETE FROM User WHERE userID = '${id}';`,
@@ -328,7 +339,7 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
                         connection.release();
 
                         if (error) {
-                            return reject(`User creation: ${error}`);
+                            return reject(`UserDatabase: ${error}`);
                         }
 
                         return results.affectedRows === 0 ? resolve(false) : resolve(true);

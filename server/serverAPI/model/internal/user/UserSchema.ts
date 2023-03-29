@@ -2,15 +2,13 @@ import IUser from "./IUser";
 
 import BaseUserSchema from "./BaseUserSchema";
 import { ObjectId } from "bson";
-import { RSOMemberType } from "../rsoMember/RSOMemberType";
-import { UniversityMemberType } from "../universityMember/UniversityMemberType";
 import { UserLevel } from "./UserLevel";
 import IBaseAffiliate from "../affiliate/IBaseAffiliate";
 
 export default class UserSchema extends BaseUserSchema implements IUser {
     userID: ObjectId;
 
-    organizationsAffiliation: IBaseAffiliate<RSOMemberType>[];
+    organizationsAffiliation: IBaseAffiliate[];
 
     constructor(
         firstName: string,
@@ -21,8 +19,8 @@ export default class UserSchema extends BaseUserSchema implements IUser {
         userLevel: UserLevel,
         lastSeen: number,
         userID: ObjectId,
-        universityAffiliation: IBaseAffiliate<UniversityMemberType>,
-        organizationsAffiliation: IBaseAffiliate<RSOMemberType>[]
+        universityAffiliation: IBaseAffiliate,
+        organizationsAffiliation: IBaseAffiliate[]
     ) {
         super(firstName, lastName, username, password, email, userLevel, lastSeen, universityAffiliation);
         

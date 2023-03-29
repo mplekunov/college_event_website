@@ -40,12 +40,23 @@ class BaseEventController extends BaseController_1.default {
         }, (error) => Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, this.getException(error))));
     }
     async requestGetAll(parameters, res) {
-        return this.database.GetAll(parameters).then(async (events) => {
-            if (events === null) {
-                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.NOT_FOUND, res, "Evemts could not be found."));
+        try {
+            let promiseList = await this.database.GetAll(parameters);
+            if (promiseList === null) {
+                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Events could not be found."));
             }
-            return events;
-        }, (error) => Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, this.getException(error))));
+            let objects = [];
+            promiseList.forEach(async (promise) => {
+                let obj = await promise;
+                if (obj !== null) {
+                    objects.push(obj);
+                }
+            });
+            return objects;
+        }
+        catch (error) {
+            return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, this.getException(error)));
+        }
     }
     async requestGet(parameters, res) {
         return this.database.Get(parameters).then(async (event) => {

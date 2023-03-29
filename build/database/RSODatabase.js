@@ -29,6 +29,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const mysql_1 = __importDefault(require("mysql"));
+const bson_1 = require("bson");
 /**
  * UserDatabase is responsible for providing an interface for the end-user filled with methods which allows
  * CRUD operations on the User collection.
@@ -38,16 +39,15 @@ const mysql_1 = __importDefault(require("mysql"));
  */
 class RSODatabase {
     static instance;
-    mysqlConnection;
+    mysqlPool;
     constructor(mysqlHost, databaseName, username, password) {
-        let mysqlConnection = mysql_1.default.createConnection({
+        let mysqlPool = mysql_1.default.createPool({
             host: mysqlHost,
             database: databaseName,
             user: username,
             password: password
         });
-        mysqlConnection.connect();
-        this.mysqlConnection = mysqlConnection;
+        this.mysqlPool = mysqlPool;
     }
     /**
      * Retrieves current instance of the UserDatabase if such exists.
@@ -68,20 +68,177 @@ class RSODatabase {
         }
         return this.instance;
     }
+    getSearchQuery(parameters) {
+        let query = "";
+        parameters.forEach((value, key) => query += `${key} = '${value}' AND `);
+        query = query.substring(0, query.length - 5);
+        return query;
+    }
+    getUserRSO(userID) {
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(`RSODatabase: ${err}`);
+                }
+                connection.query(`SELECT * FROM RSO_Members WHERE userID = '${userID.toString()}';`, (error, results, fields) => {
+                    connection.release();
+                    if (error || !Array.isArray(results)) {
+                        return reject(`RSODatabase: ${error}`);
+                    }
+                    let rsos = [];
+                    results.forEach(async (member) => {
+                        console.log(member.rsoID);
+                        rsos.push(this.Get(new Map([["rsoID", member.rsoID]])));
+                    });
+                    return resolve(rsos);
+                });
+            });
+        });
+    }
+    getMembers(rsoID) {
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(`RSODatabase: ${err}`);
+                }
+                connection.query(`SELECT * FROM RSO_Members WHERE rsoID = '${rsoID.toString()}';`, (error, results, fields) => {
+                    connection.release();
+                    if (error || !Array.isArray(results)) {
+                        console.log(error);
+                        return reject(`RSODatabase: ${error}`);
+                    }
+                    let members = [];
+                    results.forEach((member) => {
+                        members.push({
+                            userID: new bson_1.ObjectId(member.userID),
+                            memberType: member.memberType,
+                        });
+                    });
+                    return resolve(members);
+                });
+            });
+        });
+    }
+    addMember(rsoID, userID, memberType, rsoName) {
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(`RSODatabase: ${err}`);
+                }
+                connection.query(`INSERT INTO RSO_Members (rsoID, userID, memberType, rsoName)
+                VALUES ('${rsoID.toString()}', '${userID.toString()}', ${memberType}, '${rsoName}');`, (error, results, fields) => {
+                    connection.release();
+                    if (error) {
+                        return reject(`RSODatabase: ${error}`);
+                    }
+                    return resolve(this.Get(new Map([['rsoID', rsoID]])));
+                });
+            });
+        });
+    }
+    async parseRSO(result) {
+        let rsoID = new bson_1.ObjectId(result.rsoID);
+        return {
+            rsoID: rsoID,
+            name: result.name,
+            description: result.description,
+            members: await this.getMembers(rsoID)
+        };
+    }
     GetAll(parameters) {
+        if (parameters?.has('userID')) {
+            return Promise.resolve(this.getUserRSO(new bson_1.ObjectId(parameters.get('userID'))));
+        }
         throw new Error('Method not implemented.');
     }
     Get(parameters) {
-        throw new Error('Method not implemented.');
+        let query = this.getSearchQuery(parameters);
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(`RSODatabase: ${err}`);
+                }
+                connection.query(`SELECT * FROM RSO WHERE ${query} LIMIT 1;`, async (error, results, fields) => {
+                    connection.release();
+                    if (error || !Array.isArray(results) || results.length === 0) {
+                        return resolve(null);
+                    }
+                    return resolve(this.parseRSO(results[0]));
+                });
+            });
+        });
     }
     Create(object) {
-        throw new Error('Method not implemented.');
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(`RSODatabase: ${err}`);
+                }
+                let rsoID = new bson_1.ObjectId();
+                connection.query(`INSERT INTO RSO (rsoID, name, description) 
+                VALUES ('${rsoID.toString()}', '${object.name}', '${object.description}');`, async (error, results, fields) => {
+                    connection.release();
+                    if (error) {
+                        return reject(`RSODatabase: ${error}`);
+                    }
+                    try {
+                        let members = new Set(await this.getMembers(rsoID));
+                        object.members.forEach(async (member) => {
+                            if (!members.has(member)) {
+                                await this.addMember(rsoID, member.userID, member.memberType, object.name);
+                            }
+                        });
+                    }
+                    catch (error) {
+                        return reject(`RSODatabase: ${error}`);
+                    }
+                    return resolve(this.Get(new Map([['rsoID', rsoID.toString()]])));
+                });
+            });
+        });
     }
     Update(id, object) {
-        throw new Error('Method not implemented.');
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(`RSODatabase: ${err}`);
+                }
+                connection.query(`UPDATE RSO SET name = '${object.name}', description = '${object.description}' WHERE rsoID = '${id}';`, async (error, results, fields) => {
+                    connection.release();
+                    if (error) {
+                        return reject(`RSODatabase: ${error}`);
+                    }
+                    try {
+                        let members = new Set(await this.getMembers(new bson_1.ObjectId(id)));
+                        object.members.forEach(async (member) => {
+                            if (!members.has(member)) {
+                                await this.addMember(new bson_1.ObjectId(id), member.userID, member.memberType, object.name);
+                            }
+                        });
+                    }
+                    catch (error) {
+                        return reject(`RSODatabase: ${error}`);
+                    }
+                    return resolve(this.Get(new Map([['rsoID', id]])));
+                });
+            });
+        });
     }
     Delete(id) {
-        throw new Error('Method not implemented.');
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(`RSODatabase: ${err}`);
+                }
+                connection.query(`DELETE FROM RSO WHERE rsoID = '${id}';`, (error, results, fields) => {
+                    connection.release();
+                    if (error) {
+                        return reject(`RSODatabase: ${error}`);
+                    }
+                    return resolve(true);
+                });
+            });
+        });
     }
 }
 exports.default = RSODatabase;

@@ -1,22 +1,19 @@
+import { ObjectId } from "bson";
 import { IsNotEmpty, IsString, ValidateNested } from "class-validator";
 import Schema from "../../Schema";
-import IMember from "../member/IMember";
-import IBaseUniversity from "../university/IBaseUniversity";
-import { UniversityMemberType } from "../universityMember/UniversityMemberType";
-import IAffiliate from "./IAffiliate";
 import IBaseAffiliate from "./IBaseAffiliate";
 
-export default class BaseUniversityAffiliateSchema extends Schema implements IBaseAffiliate<UniversityMemberType> {
+export default class BaseUniversityAffiliateSchema extends Schema implements IBaseAffiliate {
     @IsString()
     @IsNotEmpty()
-    organizationName: string;
+    organizationName: string;    
     
-    affiliationType: UniversityMemberType;
+    organizationID: ObjectId;
 
-    constructor(organization: string, affiliationType: UniversityMemberType) {
+    constructor(organizationName: string, organizationID: ObjectId) {
         super();
 
-        this.organizationName = organization;
-        this.affiliationType = affiliationType;
+        this.organizationName = organizationName;
+        this.organizationID = organizationID;
     }
 }

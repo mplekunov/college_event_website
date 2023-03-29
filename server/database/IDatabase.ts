@@ -8,7 +8,7 @@ export default interface IDatabase<BaseType, Type> {
       * @param parameters query parameters used for searching.
       * @returns Promise filled with T or null if T objects weren't found.
       */    
-     GetAll(parameters?: Map<String, any>): Promise<Type[] | null>;
+     GetAll(parameters?: Map<String, any>): Promise<Promise<Type | null>[] | null>;
  
      /**
       * Retrieves complete information about specific user defined by T's _id.

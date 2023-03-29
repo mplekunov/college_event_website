@@ -18,6 +18,7 @@ import IIdentification from '../model/internal/user/IIdentification';
 import UserDatabase from '../../database/UserDatabase';
 import UniversityDatabase from '../../database/UniversityDatabase';
 import LocationDatabase from '../../database/LocationDatabase';
+import RSODatabase from '../../database/RSODatabase';
 
 export const userRoute = express.Router();
 

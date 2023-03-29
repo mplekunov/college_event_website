@@ -1,26 +1,32 @@
 import IMember from "../member/IMember";
-import IRSO from "./IRSO";
 import { ObjectId } from "bson";
 import Schema from "../../Schema";
 import { RSOMemberType } from "../rsoMember/RSOMemberType";
+import IBaseRSO from "./IBaseRSO";
+import { IsArray, IsNotEmpty, IsString, ValidateNested } from "class-validator";
 
-export default class RSOSchema extends Schema implements IRSO {
+export default class BaseRSOSchema extends Schema implements IBaseRSO {
+    @IsArray()
+    @ValidateNested()
     members: IMember<RSOMemberType>[];
-    rsoID: ObjectId;
+    
+    @IsNotEmpty()
+    @IsString()
     name: string;
+
+    @IsNotEmpty()
+    @IsString()
     description: string;
 
     constructor(
         name: string,
         description: string,
-        rsoID: ObjectId,
         members: IMember<RSOMemberType>[]
     ) {
         super();
         
         this.name = name;
         this.description = description;
-        this.rsoID = rsoID;
         this.members = members;
     }
 }

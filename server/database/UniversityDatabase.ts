@@ -1,8 +1,6 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import { exit } from 'process';
-
 import mysql from 'mysql';
 
 import IDatabase from './IDatabase';
@@ -32,7 +30,7 @@ export default class UniversityDatabase implements IDatabase<IBaseUniversity, IU
         password: string,
         locationDatabase: IDatabase<IBaseLocation, ILocation>,
     ) {
-        let mysqlConnection = mysql.createPool({
+        let mysqlPool = mysql.createPool({
             host: mysqlHost,
             database: databaseName,
             user: username,
@@ -40,7 +38,7 @@ export default class UniversityDatabase implements IDatabase<IBaseUniversity, IU
         });
 
         UniversityDatabase.locationDatabase = locationDatabase;
-        this.mysqlPool = mysqlConnection;
+        this.mysqlPool = mysqlPool;
     }
 
     /**
@@ -94,17 +92,17 @@ export default class UniversityDatabase implements IDatabase<IBaseUniversity, IU
         };
     }
     
-    async GetAll(parameters?: Map<String, any> | undefined): Promise<IUniversity[] | null> {
+    async GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IUniversity | null>[] | null> {
         await this.mysqlPool.query(`SELECT * FROM User`,  (error, results, fields) => {
             if (error || !Array.isArray(results) || results.length === 0) {
                 return Promise.resolve(null);
             }
 
-            let universities: IUniversity[] = [];
+            let universities: Promise<IUniversity | null>[] = [];
 
-            results.forEach(async (element: any) => universities.push(await this.parseUniversity(element)));
+            results.forEach(async (element: any) => universities.push(this.parseUniversity(element)));
 
-            return Promise.resolve(universities);
+            return universities;
         });
 
         return Promise.resolve(null);
@@ -164,8 +162,6 @@ export default class UniversityDatabase implements IDatabase<IBaseUniversity, IU
                         connection.release();
 
                         if (error) {
-                            console.log(error);
-                            console.log(location);
                             return reject(error);
                         }
 

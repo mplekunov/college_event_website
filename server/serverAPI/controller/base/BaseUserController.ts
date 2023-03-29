@@ -18,8 +18,9 @@ export default class BaseUserController extends BaseController {
         this.database = database;
     }
 
-    public convertToUserResponse(user: IBaseUser): IUserResponse {
+    public convertToUserResponse(user: IUser): IUserResponse {
         return {
+            userID: user.userID,
             username: user.username,
             firstName: user.firstName,
             lastName: user.lastName,

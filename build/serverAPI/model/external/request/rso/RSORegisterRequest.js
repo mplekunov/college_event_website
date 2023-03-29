@@ -5,14 +5,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const RSOSchema_1 = __importDefault(require("../../../internal/rso/RSOSchema"));
 class RSORegisterRequestSchema extends RSOSchema_1.default {
-    constructor(name, description, rsoID, members) {
+    constructor(name, description, members) {
         let internalMembers = [];
         members.forEach((member) => internalMembers.push({
             memberType: member.memberType,
             userID: member.userID,
-            organizationID: rsoID
         }));
-        super(name, description, rsoID, internalMembers);
+        super(name, description, internalMembers);
     }
 }
 exports.default = RSORegisterRequestSchema;
