@@ -91,15 +91,16 @@ class UniversityDatabase {
         };
     }
     async GetAll(parameters) {
-        await this.mysqlPool.query(`SELECT * FROM User`, (error, results, fields) => {
-            if (error || !Array.isArray(results) || results.length === 0) {
-                return Promise.resolve(null);
-            }
-            let universities = [];
-            results.forEach(async (element) => universities.push(this.parseUniversity(element)));
-            return universities;
-        });
-        return Promise.resolve(null);
+        // await this.mysqlPool.query(`SELECT * FROM User`,  (error, results, fields) => {
+        //     if (error || !Array.isArray(results) || results.length === 0) {
+        //         return Promise.resolve(null);
+        //     }
+        //     let universities: Promise<IUniversity | null>[] = [];
+        //     results.forEach(async (element: any) => universities.push(this.parseUniversity(element)));
+        //     return universities;
+        // });
+        throw Error('Not Implemented');
+        // return Promise.resolve(null);
     }
     getSearchQuery(parameters) {
         let query = "";
@@ -136,6 +137,9 @@ class UniversityDatabase {
                     if (location === null) {
                         return reject("Failed to create location");
                     }
+                }
+                if (await this.Get(new Map([["name", object.name]])) !== null) {
+                    return reject(`UniversityDatabase: University with such name already exist.`);
                 }
                 connection.query(`INSERT INTO University (universityID, name, description, locationID, numStudents) 
                 VALUES('${(new bson_1.ObjectId()).toString()}', '${object.name}', '${object.description}', '${location.locationID.toString()}', ${object.numStudents});`, async (error, results, fields) => {

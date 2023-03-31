@@ -28,9 +28,14 @@ class RSOController extends BaseRSOController_1.default {
      * @param res Response parameter that holds information about response.
      */
     getAll = async (req, res) => {
-        // let parameters = new Map<string, any>([["universityID", req.serverUser.universityAffiliation.organizationID], ["query", req.body?.query]]);
+        let parameters = new Map([["universityID", req.serverUser.universityAffiliation.organizationID], ["query", req.body?.query]]);
         if (req.body?.userRSOS !== undefined && Boolean(req.body?.userRSOS)) {
             return this.requestGetAll(new Map([["userID", req.serverUser.userID.toString()]]), res).then(rso => {
+                return this.send(ResponseCodes_1.ResponseCodes.OK, res, rso);
+            }, (response) => response);
+        }
+        else {
+            return this.requestGetAll(parameters, res).then(rso => {
                 return this.send(ResponseCodes_1.ResponseCodes.OK, res, rso);
             }, (response) => response);
         }
@@ -46,8 +51,8 @@ class RSOController extends BaseRSOController_1.default {
         try {
             let rso = await this.requestGet(parameters, res);
             let userAffiliate = req.serverUser.organizationsAffiliation
-                .find((member) => member.organizationID == rso.rsoID);
-            let userMember = rso.members.filter((member) => member.userID == req.serverUser.userID);
+                .find((member) => member.organizationID.equals(rso.rsoID));
+            let userMember = rso.members.filter((member) => member.userID.equals(req.serverUser.userID));
             if (userAffiliate == undefined || userMember.length == 0) {
                 return this.send(ResponseCodes_1.ResponseCodes.FORBIDDEN, res, "RSO could not be accessed due to user not being affiliated with RSO.");
             }
@@ -69,25 +74,28 @@ class RSOController extends BaseRSOController_1.default {
                 return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "RSO should contain at least 4 members.");
             }
             let uniqueStudents = new Set();
+            let userInRSO = rsoRegisterSchema.members.find((member) => member.userID.toString() === req.serverUser.userID.toString());
+            if (userInRSO === undefined) {
+                return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "User is not in RSO.");
+            }
             rsoRegisterSchema.members.forEach((member) => {
-                if (uniqueStudents.has(member.userID)) {
+                if (uniqueStudents.has(member.userID.toString())) {
                     return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "RSO could not be created, duplicate users has been found.");
                 }
-                uniqueStudents.add(member.userID);
+                uniqueStudents.add(member.userID.toString());
             });
-            let admin = rsoRegisterSchema.members.find((member) => member.memberType == RSOMemberType_1.RSOMemberType.ADMIN);
+            let admin = rsoRegisterSchema.members.find((member) => member.memberType === RSOMemberType_1.RSOMemberType.ADMIN);
             if (admin === undefined) {
                 return this.send(ResponseCodes_1.ResponseCodes.FORBIDDEN, res, "RSO could not be created, admin wasn't assigned.");
             }
             let adminStudent = await this.userController.requestGet(new Map([["userID", admin.userID]]), res);
-            rsoRegisterSchema.members
-                .filter((member) => member.memberType !== RSOMemberType_1.RSOMemberType.ADMIN)
-                .forEach(async (member) => {
+            let members = rsoRegisterSchema.members.filter((member) => member.memberType !== RSOMemberType_1.RSOMemberType.ADMIN);
+            for (const member of members) {
                 let student = await this.userController.requestGet(new Map([["userID", member.userID]]), res);
                 if (adminStudent.universityAffiliation.organizationName !== student.universityAffiliation.organizationName) {
                     return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "RSO could not be created, all students should attend the same univesity");
                 }
-            });
+            }
             let rso = await this.requestCreate(rsoRegisterSchema, res);
             return this.send(ResponseCodes_1.ResponseCodes.OK, res, rso);
         }
@@ -105,7 +113,7 @@ class RSOController extends BaseRSOController_1.default {
         let parameters = new Map([["rsoID", req.params.rsoID]]);
         try {
             let rso = await this.requestGet(parameters, res);
-            let rsoMember = rso.members.find((member) => member.userID === req.serverUser.userID);
+            let rsoMember = rso.members.find((member) => member.userID.equals(req.serverUser.userID));
             if (rsoMember !== undefined) {
                 return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "User is already affiliated with RSO.");
             }
@@ -115,6 +123,7 @@ class RSOController extends BaseRSOController_1.default {
             };
             rso.members.push(member);
             await this.requestUpdate(rso.rsoID.toString(), rso, res);
+            return this.send(ResponseCodes_1.ResponseCodes.OK, res, "RSO has been updated.");
         }
         catch (response) {
             return response;
@@ -130,18 +139,19 @@ class RSOController extends BaseRSOController_1.default {
         let parameters = new Map([["rsoID", req.params.rsoID]]);
         try {
             let rso = await this.requestGet(parameters, res);
-            let rsoMember = rso.members.find((member) => member.userID === req.serverUser.userID);
-            if (rsoMember == undefined) {
+            let rsoMember = rso.members.find((member) => member.userID.equals(req.serverUser.userID));
+            if (rsoMember === undefined) {
                 return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "User is not affiliated with RSO.");
             }
             let updatedMembers = [];
             rso.members.forEach((member) => {
-                if (req.serverUser.userID !== member.userID) {
+                if (!req.serverUser.userID.equals(member.userID)) {
                     updatedMembers.push(member);
                 }
             });
             rso.members = updatedMembers;
             await this.requestUpdate(rso.rsoID.toString(), rso, res);
+            return this.send(ResponseCodes_1.ResponseCodes.OK, res, "User leaved RSO.");
         }
         catch (response) {
             return response;
@@ -158,8 +168,8 @@ class RSOController extends BaseRSOController_1.default {
         try {
             let rso = await this.requestGet(parameters, res);
             let userAffiliate = req.serverUser.organizationsAffiliation
-                .find((member) => member.organizationID == rso.rsoID);
-            let userMember = rso.members.filter((member) => member.userID == req.serverUser.userID);
+                .find((member) => member.organizationID.equals(rso.rsoID));
+            let userMember = rso.members.filter((member) => member.userID.equals(req.serverUser.userID));
             if (userAffiliate == undefined || userMember.length == 0) {
                 return this.send(ResponseCodes_1.ResponseCodes.FORBIDDEN, res, "RSO could not be accessed due to user not being affiliated with RSO.");
             }

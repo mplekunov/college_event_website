@@ -7,10 +7,6 @@ import IUser from '../serverAPI/model/internal/user/IUser';
 import IDatabase from './IDatabase';
 import IBaseUser from '../serverAPI/model/internal/user/IBaseUser';
 import IBaseUniversity from '../serverAPI/model/internal/university/IBaseUniversity';
-import IAffiliate from '../serverAPI/model/internal/affiliate/IAffiliate';
-import IMember from '../serverAPI/model/internal/member/IMember';
-import IBaseRSO from '../serverAPI/model/internal/rso/IBaseRSO';
-import { RSOMemberType } from '../serverAPI/model/internal/rsoMember/RSOMemberType';
 import IUniversity from '../serverAPI/model/internal/university/IUniversity';
 import { ObjectId } from 'bson';
 import IBaseAffiliate from '../serverAPI/model/internal/affiliate/IBaseAffiliate';
@@ -93,7 +89,7 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
             lastSeen: result.lastSeen,
             username: result.username,
             password: result.password,
-            userID: result.userID,
+            userID: new ObjectId(result.userID),
             userLevel: result.userLevel,
             universityAffiliation: universityAffiliation,
             organizationsAffiliation: organizationsAffiliation
@@ -131,7 +127,7 @@ export default class UserDatabase implements IDatabase<IBaseUser, IUser> {
         memberInfo.forEach(async (element: any) => {
             organizations.push({
                 organizationName: element.organizationName,
-                organizationID: element.rsoID
+                organizationID: new ObjectId(element.rsoID)
             });
         });
 

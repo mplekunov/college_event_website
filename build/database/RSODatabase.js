@@ -87,7 +87,6 @@ class RSODatabase {
                     }
                     let rsos = [];
                     results.forEach(async (member) => {
-                        console.log(member.rsoID);
                         rsos.push(this.Get(new Map([["rsoID", member.rsoID]])));
                     });
                     return resolve(rsos);
@@ -136,10 +135,26 @@ class RSODatabase {
             });
         });
     }
+    deleteMember(rsoID, userID) {
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(`RSODatabase: ${err}`);
+                }
+                connection.query(`DELETE FROM RSO_Members WHERE rsoID = '${rsoID.toString()}' AND userID = '${userID.toString()}';`, (error, results, fields) => {
+                    connection.release();
+                    if (error) {
+                        return reject(`RSODatabase: ${error}`);
+                    }
+                    return resolve(this.Get(new Map([['rsoID', rsoID]])));
+                });
+            });
+        });
+    }
     async parseRSO(result) {
         let rsoID = new bson_1.ObjectId(result.rsoID);
         return {
-            rsoID: rsoID,
+            rsoID: new bson_1.ObjectId(rsoID),
             name: result.name,
             description: result.description,
             members: await this.getMembers(rsoID)
@@ -170,11 +185,14 @@ class RSODatabase {
     }
     Create(object) {
         return new Promise((resolve, reject) => {
-            this.mysqlPool.getConnection((err, connection) => {
+            this.mysqlPool.getConnection(async (err, connection) => {
                 if (err) {
                     return reject(`RSODatabase: ${err}`);
                 }
                 let rsoID = new bson_1.ObjectId();
+                if (await this.Get(new Map([["name", object.name]])) !== null) {
+                    return reject(`RSODatabase: RSO with such name already exists`);
+                }
                 connection.query(`INSERT INTO RSO (rsoID, name, description) 
                 VALUES ('${rsoID.toString()}', '${object.name}', '${object.description}');`, async (error, results, fields) => {
                     connection.release();
@@ -182,12 +200,12 @@ class RSODatabase {
                         return reject(`RSODatabase: ${error}`);
                     }
                     try {
-                        let members = new Set(await this.getMembers(rsoID));
-                        object.members.forEach(async (member) => {
-                            if (!members.has(member)) {
+                        let members = new Set((await this.getMembers(rsoID)).flatMap((member) => member.userID.toString()));
+                        for (const member of object.members) {
+                            if (!members.has(member.userID.toString())) {
                                 await this.addMember(rsoID, member.userID, member.memberType, object.name);
                             }
-                        });
+                        }
                     }
                     catch (error) {
                         return reject(`RSODatabase: ${error}`);
@@ -209,12 +227,13 @@ class RSODatabase {
                         return reject(`RSODatabase: ${error}`);
                     }
                     try {
-                        let members = new Set(await this.getMembers(new bson_1.ObjectId(id)));
-                        object.members.forEach(async (member) => {
-                            if (!members.has(member)) {
-                                await this.addMember(new bson_1.ObjectId(id), member.userID, member.memberType, object.name);
-                            }
-                        });
+                        let members = await this.getMembers(new bson_1.ObjectId(id));
+                        for (const member of members) {
+                            await this.deleteMember(new bson_1.ObjectId(id), member.userID);
+                        }
+                        for (const member of object.members) {
+                            await this.addMember(new bson_1.ObjectId(id), member.userID, member.memberType, object.name);
+                        }
                     }
                     catch (error) {
                         return reject(`RSODatabase: ${error}`);

@@ -1,109 +1,157 @@
-// import { Request, Response } from "express";
+import { Request, Response } from "express";
 
-// import { ResponseCodes } from "../../utils/ResponseCodes";
+import { ResponseCodes } from "../../utils/ResponseCodes";
 
-// import bson from 'bson';
+import IDatabase from '../../database/IDatabase';
 
-// import IComment from "../model/internal/comment/IComment";
-// import BaseController from "./base/BaseController";
-// import EventController from "./EventController";
+import bson from 'bson';
 
-// /**
-//  * This class creates several properties responsible for event-actions 
-//  * provided to the user.
-//  */
-// export default class CommentController extends BaseController {
-//     eventController: EventController;
+import IBaseEvent from "../model/internal/event/IBaseEvent";
+import IEvent from "../model/internal/event/IEvent";
+import { RSOMemberType } from "../model/internal/rsoMember/RSOMemberType";
+import BaseRSOController from './base/BaseRSOController';
+import IMember from '../model/internal/member/IMember';
+import BaseUniversityController from './base/BaseUniversityController';
+import { UserLevel } from "../model/internal/user/UserLevel";
+import { ObjectId } from 'bson';
+import BaseEventSchema from '../model/internal/event/BaseEventSchema';
+import BaseLocationSchema from '../model/internal/location/BaseLocationSchema';
+import BaseCommentController from './base/BaseCommentController';
+import IBaseComment from '../model/internal/comment/IBaseComment';
+import IComment from '../model/internal/comment/IComment';
+import BaseEventController from "./base/BaseEventController";
+import BaseCommentSchema from "../model/internal/comment/BaseCommentSchema";
 
-//     constructor(eventController: EventController) {
-//         super();
-        
-//         this.eventController = eventController;
-//     }
+/**
+ * This class creates several properties responsible for event-actions 
+ * provided to the user.
+ */
+export default class CommentController extends BaseCommentController {
+    private eventController: BaseEventController;
 
-//     protected parseAddRequest(req: Request, res: Response): Promise<IComment> {
-//         let request: IComment = {
-//             commentID: new bson.ObjectId(),
-//             content: req.body?.content,
-//             userID : req.body?.userID    
-//         };
+    constructor(eventDatabase: IDatabase<IBaseComment, IComment>, eventController: BaseEventController) {
+        super(eventDatabase);
 
-//         return Promise.resolve(request);
-//         // return this.verifySchema(request, res);
-//     }
+        this.eventController = eventController
+    }
 
-//     /**
-//      * Gets information about all RSOs at user's university.
-//      *  
-//      * @param req Request parameter that holds information about request.
-//      * @param res Response parameter that holds information about response.
-//      */
-//     getAll = async (req: Request, res: Response) => {
-//         let parameters = new Map<string, any>([["eventID", req.params.eventID]]);
+    protected parseRegisterRequest(req: Request, res: Response): Promise<IBaseComment> {
+        let request = new BaseCommentSchema(
+            req.body?.content,
+            req.serverUser.userID,
+            new ObjectId(req.body?.eventID)
+        );
 
-//         return this.eventController.requestGet(parameters, res).then(event => {
-//             return this.send(ResponseCodes.OK, res, event.comments);
-//         }, (response) => response);
-//     }
+        return this.verifySchema(request, res);
+    }
 
-//     /**
-//      * Gets information about RSO at specified rsoID.
-//      *  
-//      * @param req Request parameter that holds information about request.
-//      * @param res Response parameter that holds information about response.
-//      */
-//     get = async (req: Request, res: Response) => {
-//         let parameters = new Map<string, any>([["eventID", req.params.eventID]]);
-//         let commentID = req.params.commentID;
+    /**
+     * Gets information about all RSOs at user's university.
+     *  
+     * @param req Request parameter that holds information about request.
+     * @param res Response parameter that holds information about response.
+     */
+    getAll = async (req: Request, res: Response) => {
+        let parameters = new Map<string, any>([["eventID", req.body?.eventID]]);
 
-//         try {
-//             let event = await this.eventController.requestGet(parameters, res);
-//             let comment = event.comments.find(comment => comment.commentID.toString() == commentID);
+        return this.requestGetAll(parameters, res).then(rso => {
+            return this.send(ResponseCodes.OK, res, rso);
+        }, (response) => response);
+    }
 
-//             return this.send(ResponseCodes.OK, res, comment);
-//         } catch (response) {
-//             return response;
-//         }
-//     }
+    /**
+     * Gets information about RSO at specified rsoID.
+     *  
+     * @param req Request parameter that holds information about request.
+     * @param res Response parameter that holds information about response.
+     */
+    get = async (req: Request, res: Response) => {
+        let parameters = new Map<string, any>([["commentID", req.params.commentID]]);
 
-//     add = async (req: Request, res: Response) => {
-//         let commentCreationSchema: IComment;
-//         let eventID = req.params.eventID;
+        try {
+            let comment = await this.requestGet(parameters, res);
 
-//         try {
-//             commentCreationSchema = await this.parseAddRequest(req, res);
+            return this.send(ResponseCodes.OK, res, comment);
+        } catch (response) {
+            return response;
+        }
+    }
 
-//             let event = await this.eventController.requestGet(new Map<string, any>([["eventID", eventID]]), res);
+    create = async (req: Request, res: Response) => {
+        let commentCreationSchema: IBaseComment;
 
-//             event.comments.push(commentCreationSchema);
+        try {
+            commentCreationSchema = await this.parseRegisterRequest(req, res);
 
-//             await this.eventController.requestUpdate(eventID, event, res);
-//             this.send(ResponseCodes.BAD_REQUEST, res, event);
-//         } catch (response) {
-//             return response;
-//         }
-//     }
+            let event = await this.eventController.requestGet(new Map([["eventID", commentCreationSchema.eventID]]), res);
 
-//     /**
-//      * Deletes rso object at specified rsoID.
-//      * 
-//      * @param req Request parameter that holds information about request.
-//      * @param res Response parameter that holds information about response.
-//      */
-//     delete = async (req: Request, res: Response) => {
-//         let parameters = new Map<string, any>([["eventID", req.params.eventID]]);
-//         let commentID = req.params.commentID;
+            if (event === undefined) {
+                return this.send(ResponseCodes.BAD_REQUEST, res, "Event doesn't exist.");
+            }
 
-//         try {
-//             let event = await this.eventController.requestGet(parameters, res);
+            let comment = await this.requestCreate(commentCreationSchema, res);
 
-//             event.comments = event.comments.filter(comment => comment.commentID.toString() != commentID);
+            return this.send(ResponseCodes.OK, res, comment);
+        } catch (response) {
+            return response;
+        }
+    }
 
-//             await this.eventController.requestUpdate(event.eventID.toString(), event, res);
+    update = async (req: Request, res: Response) => {
+        let parameters = new Map<string, any>([["commentID", req.params.commentID]]);
 
-//             return this.send(ResponseCodes.OK, res, event.comments);
-//         } catch (response) {
-//             return response;
-//         }
-//     }
-// }
+        try {
+            let comment = await this.requestGet(parameters, res);
+
+            if (comment === undefined) {
+                return this.send(ResponseCodes.BAD_REQUEST, res, "Comment doesn't exist.");
+            }
+
+            if (comment.userID !== req.serverUser.userID) {
+                return this.send(ResponseCodes.UNAUTHORIZED, res, "You are not authorized to update this comment.");
+            }
+
+            let commentUpdateSchema = new BaseCommentSchema(
+                req.body?.content,
+                req.serverUser.userID,
+                comment.eventID
+            );
+
+            this.verifySchema(commentUpdateSchema, res);
+
+            let updatedComment = await this.requestUpdate(req.params.commentID, commentUpdateSchema, res);
+
+            return this.send(ResponseCodes.OK, res, updatedComment);
+        } catch (response) {
+            return response;
+        }
+    }
+
+    /**
+     * Deletes rso object at specified rsoID.
+     * 
+     * @param req Request parameter that holds information about request.
+     * @param res Response parameter that holds information about response.
+     */
+    delete = async (req: Request, res: Response) => {
+        let parameters = new Map<string, any>([["commentID", req.params.commentID]]);
+
+        try {
+            let comment = await this.requestGet(parameters, res);
+
+            if (comment === undefined) {
+                return this.send(ResponseCodes.BAD_REQUEST, res, "Comment doesn't exist.");
+            }
+
+            if (comment.userID !== req.serverUser.userID) {
+                return this.send(ResponseCodes.UNAUTHORIZED, res, "You are not authorized to delete this comment.");
+            }
+
+            await this.requestDelete(req.params.commentID, res);
+
+            return this.send(ResponseCodes.OK, res, "Comment has been deleted.");
+        } catch (response) {
+            return response;
+        }
+    }
+}

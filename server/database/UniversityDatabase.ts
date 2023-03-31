@@ -93,19 +93,25 @@ export default class UniversityDatabase implements IDatabase<IBaseUniversity, IU
     }
     
     async GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IUniversity | null>[] | null> {
-        await this.mysqlPool.query(`SELECT * FROM User`,  (error, results, fields) => {
-            if (error || !Array.isArray(results) || results.length === 0) {
-                return Promise.resolve(null);
-            }
+        let query = parameters ? this.getSearchQuery(parameters) : "";
 
-            let universities: Promise<IUniversity | null>[] = [];
-
-            results.forEach(async (element: any) => universities.push(this.parseUniversity(element)));
-
-            return universities;
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(err);
+                }
+    
+                connection.query(`SELECT * FROM University WHERE ${query};`, (error, results, fields) => {
+                    connection.release();
+    
+                    if (error || !Array.isArray(results)) {
+                        return resolve(null);
+                    }
+                    
+                    return resolve(results.map((result: any) => this.parseUniversity(result)));
+                });
+            });
         });
-
-        return Promise.resolve(null);
     }
 
     private getSearchQuery(parameters: Map<String, any>): string {
@@ -155,6 +161,11 @@ export default class UniversityDatabase implements IDatabase<IBaseUniversity, IU
                         return reject("Failed to create location");
                     }
                 }
+
+                if (await this.Get(new Map([["name", object.name]])) !== null) {
+                    return reject(`UniversityDatabase: University with such name already exist.`);
+                }
+
 
                 connection.query(`INSERT INTO University (universityID, name, description, locationID, numStudents) 
                 VALUES('${(new ObjectId()).toString()}', '${object.name}', '${object.description}', '${location.locationID.toString()}', ${object.numStudents});`,

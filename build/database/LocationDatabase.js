@@ -70,7 +70,7 @@ class LocationDatabase {
     }
     parseLocation(result) {
         return {
-            locationID: result.locationID,
+            locationID: new bson_1.ObjectId(result.locationID),
             address: result.address,
             latitude: result.latitude,
             longitude: result.longitude

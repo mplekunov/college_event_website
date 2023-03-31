@@ -1,15 +1,14 @@
-import { ObjectId } from "bson";
-import IHost from "../../external/host/IHost";
-import ILocation from "../location/ILocation";
+import { ObjectId } from 'bson';
+import IBaseLocation from '../location/IBaseLocation';
 
 export default interface IBaseEvent {
-    eventID: ObjectId;
-    host: IHost;
     name: string;
+    hostID: ObjectId;
+    hostType: HostType;
     category: string;
     description: string;
-    date: Date;
-    location: ILocation;
+    date: number;
+    location: IBaseLocation;
     email: string;
     phone: string;
 }

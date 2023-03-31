@@ -1,5 +1,5 @@
 enum HostType {
-    STUDENT,
+    PUBLIC,
     RSO,
     UNIVERSITY
 }

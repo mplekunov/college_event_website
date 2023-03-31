@@ -65,7 +65,7 @@ export default class LocationDatabase implements IDatabase<IBaseLocation, ILocat
 
     private parseLocation(result: any): ILocation {
         return {
-            locationID: result.locationID,
+            locationID: new ObjectId(result.locationID),
             address: result.address,
             latitude: result.latitude,
             longitude: result.longitude
@@ -119,7 +119,7 @@ export default class LocationDatabase implements IDatabase<IBaseLocation, ILocat
         });
     }
 
-    async Create(object: ILocation): Promise<ILocation | null> {
+    async Create(object: IBaseLocation): Promise<ILocation | null> {
         return new Promise((resolve, reject) => {
             this.mysqlPool.getConnection((err, connection) => {
                 if (err) {

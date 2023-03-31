@@ -87,7 +87,7 @@ class UserDatabase {
             lastSeen: result.lastSeen,
             username: result.username,
             password: result.password,
-            userID: result.userID,
+            userID: new bson_1.ObjectId(result.userID),
             userLevel: result.userLevel,
             universityAffiliation: universityAffiliation,
             organizationsAffiliation: organizationsAffiliation
@@ -116,7 +116,7 @@ class UserDatabase {
         memberInfo.forEach(async (element) => {
             organizations.push({
                 organizationName: element.organizationName,
-                organizationID: element.rsoID
+                organizationID: new bson_1.ObjectId(element.rsoID)
             });
         });
         return organizations;

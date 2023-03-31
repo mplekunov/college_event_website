@@ -4,14 +4,14 @@
   "description": "",
   "main": "Server.js",
   "engines": {
-    "node": "18.12.0"
+    "node": "^18.12.0"
   },
   "scripts": {
     "test": "jest ",
     "start": "node build/Server.js",
     "postinstall": "tsc",
     "compile": "tsc && node build/Server.js",
-    "dev": "./node_modules/nodemon/bin/nodemon.js -e ts  --exec \"npm run compile\""
+    "dev": "nodemon -e ts --exec \"npm run compile\""
   },
   "keywords": [],
   "author": "",

@@ -18,6 +18,7 @@ import Logger from './serverAPI/middleware/logger/Logger';
 import { userRoute } from './serverAPI/routes/UserRoutes';
 import { authenticationRoute } from './serverAPI/routes/AuthenticationRoutes';
 import { rsoRoute } from './serverAPI/routes/RSORoutes';
+import { eventRoute } from './serverAPI/routes/EventRoute';
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use(cors(corsOptions));
 app.use('/users', userRoute);
 app.use('/auth', authenticationRoute);
 app.use('/rsos', rsoRoute);
+app.use('/events', eventRoute);
 
 const server = (port: number) => {
     app.listen(port, () => {

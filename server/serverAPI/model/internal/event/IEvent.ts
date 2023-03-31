@@ -1,7 +1,6 @@
-import IComment from "../comment/IComment";
+import { ObjectId } from "bson";
 import IBaseEvent from "./IBaseEvent";
 
 export default interface IEvent extends IBaseEvent {
-    rating: number;
-    comments: Array<IComment>;
+    eventID: ObjectId;
 }

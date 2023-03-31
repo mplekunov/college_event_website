@@ -90,8 +90,7 @@ export default class RSODatabase implements IDatabase<IBaseRSO, IRSO> {
 
                     let rsos: Promise<IRSO | null>[] = [];
 
-                    results.forEach(async (member: any) => {
-                        console.log(member.rsoID);
+                    results.forEach((member: any) => {
                         rsos.push(this.Get(new Map([["rsoID", member.rsoID]])));
                     });
 
@@ -153,18 +152,39 @@ export default class RSODatabase implements IDatabase<IBaseRSO, IRSO> {
         });
     }
 
+    private deleteMember(rsoID: ObjectId, userID: ObjectId): Promise<IRSO | null> {
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(`RSODatabase: ${err}`);
+                }
+
+                connection.query(`DELETE FROM RSO_Members WHERE rsoID = '${rsoID.toString()}' AND userID = '${userID.toString()}';`,
+                    (error, results, fields) => {
+                        connection.release();
+
+                        if (error) {
+                            return reject(`RSODatabase: ${error}`);
+                        }
+
+                        return resolve(this.Get(new Map<string, any>([['rsoID', rsoID]])));
+                    });
+            });
+        });
+    }
+
     private async parseRSO(result: any): Promise<IRSO> {
         let rsoID = new ObjectId(result.rsoID);
 
         return {
-            rsoID: rsoID,
+            rsoID: new ObjectId(rsoID),
             name: result.name,
             description: result.description,
             members: await this.getMembers(rsoID)
         };
     }
 
-    GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IRSO| null>[]> {
+    GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IRSO | null>[]> {
         if (parameters?.has('userID')) {
             return Promise.resolve(this.getUserRSO(new ObjectId(parameters.get('userID'))!));
         }
@@ -196,12 +216,16 @@ export default class RSODatabase implements IDatabase<IBaseRSO, IRSO> {
 
     Create(object: IBaseRSO): Promise<IRSO | null> {
         return new Promise((resolve, reject) => {
-            this.mysqlPool.getConnection((err, connection) => {
+            this.mysqlPool.getConnection(async (err, connection) => {
                 if (err) {
                     return reject(`RSODatabase: ${err}`);
                 }
 
                 let rsoID = new ObjectId();
+
+                if (await this.Get(new Map([["name", object.name]])) !== null) {
+                    return reject(`RSODatabase: RSO with such name already exists`);
+                }
 
                 connection.query(`INSERT INTO RSO (rsoID, name, description) 
                 VALUES ('${rsoID.toString()}', '${object.name}', '${object.description}');`,
@@ -213,13 +237,13 @@ export default class RSODatabase implements IDatabase<IBaseRSO, IRSO> {
                         }
 
                         try {
-                            let members = new Set(await this.getMembers(rsoID));
+                            let members = new Set((await this.getMembers(rsoID)).flatMap((member: IMember<RSOMemberType>) => member.userID.toString()));
 
-                            object.members.forEach(async member => {
-                                if (!members.has(member)) {
+                            for (const member of object.members) {
+                                if (!members.has(member.userID.toString())) {
                                     await this.addMember(rsoID, member.userID, member.memberType, object.name);
                                 }
-                            });
+                            }
                         } catch (error) {
                             return reject(`RSODatabase: ${error}`);
                         }
@@ -246,13 +270,15 @@ export default class RSODatabase implements IDatabase<IBaseRSO, IRSO> {
                         }
 
                         try {
-                            let members = new Set(await this.getMembers(new ObjectId(id)));
+                            let members = await this.getMembers(new ObjectId(id));
 
-                            object.members.forEach(async member => {
-                                if (!members.has(member)) {
-                                    await this.addMember(new ObjectId(id), member.userID, member.memberType, object.name);
-                                }
-                            });
+                            for (const member of members) {
+                                await this.deleteMember(new ObjectId(id), member.userID);
+                            }
+
+                            for (const member of object.members) {
+                                await this.addMember(new ObjectId(id), member.userID, member.memberType, object.name);
+                            }
                         } catch (error) {
                             return reject(`RSODatabase: ${error}`);
                         }
@@ -280,7 +306,7 @@ export default class RSODatabase implements IDatabase<IBaseRSO, IRSO> {
 
                         return resolve(true);
                     });
-            });            
+            });
         });
     }
 }

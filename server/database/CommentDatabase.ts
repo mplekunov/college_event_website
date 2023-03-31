@@ -11,6 +11,10 @@ import { resolve } from 'path';
 import { rejects } from 'assert';
 import LocationDatabase from './LocationDatabase';
 import { ObjectId } from 'bson';
+import IBaseComment from '../serverAPI/model/internal/comment/IBaseComment';
+import IComment from '../serverAPI/model/internal/comment/IComment';
+import EventDatabase from './EventDatabase';
+import UserDatabase from './UserDatabase';
 
 /**
  * UserDatabase is responsible for providing an interface for the end-user filled with methods which allows
@@ -19,9 +23,10 @@ import { ObjectId } from 'bson';
  * It also uses Singleton design pattern. As such, there is only one database instance that will be created through out
  * execution lifetime.
  */
-export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
-    private static instance?: EventDatabase;
-    private static locationDatabase: LocationDatabase;
+export default class CommentDatabase implements IDatabase<IBaseComment, IComment> {
+    private static instance?: CommentDatabase;
+    private static EventDatabase: EventDatabase;
+    private static UserDatabase: UserDatabase;
 
     private mysqlPool: mysql.Pool;
 
@@ -30,7 +35,8 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
         databaseName: string,
         username: string,
         password: string,
-        locationDatabase: LocationDatabase
+        EventDatabase: EventDatabase,
+        UserDatabase: UserDatabase
     ) {
         let mysqlConnection = mysql.createPool({
             host: mysqlHost,
@@ -39,7 +45,9 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
             password: password
         });
 
-        EventDatabase.locationDatabase = locationDatabase;
+        CommentDatabase.EventDatabase = EventDatabase;
+        CommentDatabase.UserDatabase = UserDatabase;
+
         this.mysqlPool = mysqlConnection;
     }
 
@@ -48,8 +56,8 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
      * 
      * @returns UserDatabase object or undefined.
      */
-    static getInstance(): EventDatabase | undefined {
-        return EventDatabase.instance;
+    static getInstance(): CommentDatabase | undefined {
+        return CommentDatabase.instance;
     }
 
     /**
@@ -62,13 +70,14 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
         databaseName: string,
         username: string,
         password: string,
-        locationDatabase: LocationDatabase
-    ): EventDatabase {
-        if (EventDatabase.instance === undefined) {
-            EventDatabase.instance = new EventDatabase(mysqlHost, databaseName, username, password, locationDatabase);
+        eventDatabase: EventDatabase,
+        userDatabase: UserDatabase
+    ): CommentDatabase {
+        if (CommentDatabase.instance === undefined) {
+            CommentDatabase.instance = new CommentDatabase(mysqlHost, databaseName, username, password, eventDatabase, userDatabase);
         }
 
-        return EventDatabase.instance;
+        return CommentDatabase.instance;
     }
 
     private getSearchQuery(parameters: Map<String, any>): string {
@@ -80,34 +89,16 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
         return query;
     }
 
-    private async parseEvent(result: any): Promise<IEvent> {
-        let location;
-
-        try {
-            location = await EventDatabase.locationDatabase.Get(new Map([["locationID", result.locationID]]));
-        } catch (err) {
-            return Promise.reject(err);
-        }
-
-        if (location === null) {
-            return Promise.reject("Location not found.");
-        }
-
+    private async parseComment(result: any): Promise<IComment> {
         return Promise.resolve({
             eventID: new ObjectId(result.eventID),
-            name: result.name,
-            description: result.description,
-            location: location,
-            category: result.category,
-            date: result.date,
-            email: result.email,
-            phone: result.phone,
-            hostID: new ObjectId(result.hostID),
-            hostType: parseInt(result.hostType) as HostType
+            userID: new ObjectId(result.userID),
+            commentID: new ObjectId(result.commentID),
+            content: result.content
         });
     }
 
-    GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IEvent | null>[] | null> {
+    GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IComment | null>[] | null> {
         let query = parameters ? this.getSearchQuery(parameters) : "";
 
         return new Promise((resolve, rejects) => {
@@ -123,10 +114,10 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
                         return rejects(err);
                     }
 
-                    let events: Promise<IEvent | null>[] = [];
+                    let events: Promise<IComment | null>[] = [];
 
                     results.forEach((result: any) => {
-                        events.push(this.parseEvent(result));
+                        events.push(this.parseComment(result));
                     });
 
                     return resolve(events);
@@ -135,7 +126,7 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
         });
     }
 
-    Get(parameters: Map<String, any>): Promise<IEvent | null> {
+    Get(parameters: Map<String, any>): Promise<IComment | null> {
         let query = parameters ? this.getSearchQuery(parameters) : "";
 
         return new Promise((resolve, rejects) => {
@@ -151,33 +142,30 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
                         return rejects(err);
                     }
 
-                    return resolve(this.parseEvent(results[0]));
+                    return resolve(this.parseComment(results[0]));
                 });
             });
         });
     }
 
-    Create(object: IBaseEvent): Promise<IEvent | null> {
+    Create(object: IBaseComment): Promise<IComment | null> {
         return new Promise((resolve, reject) => {
             this.mysqlPool.getConnection(async (err, connection) => {
                 if (err) {
                     return reject(err);
                 }
 
-                let location = await EventDatabase.locationDatabase.Get(new Map([["address", object.location.address]]));
+                let event = await CommentDatabase.EventDatabase.Get(new Map([["eventID", object.eventID]]));
+                let user = await CommentDatabase.UserDatabase.Get(new Map([["userID", object.userID]]));
 
-                if (location === null) {
-                    location = await EventDatabase.locationDatabase.Create(object.location);
-
-                    if (location === null) {
-                        return reject("Failed to create location");
-                    }
+                if (!event || !user) {
+                    return reject("Event or user doesn't exist");
                 }
 
-                let eventID = new ObjectId();
+                let commentID = new ObjectId();
 
-                connection.query(`INSERT INTO Event (eventID, name, description, locationID, category, date, email, phone, hostID, hostType) 
-                VALUES ('${eventID.toString()}', '${object.name}', '${object.description}', '${location.locationID.toString()}', '${object.category}', '${object.date}', '${object.email}', '${object.phone}', '${object.hostID.toString()}', '${object.hostType}');`,
+                connection.query(`INSERT INTO Comment (commentID, eventID, userID, content) 
+                VALUES ('${commentID.toString()}', '${object.eventID.toString()}', '${object.userID.toString()}', '${object.content}');`,
                     (err, results) => {
                         connection.release();
 
@@ -185,30 +173,21 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
                             return reject(err);
                         }
 
-                        return resolve(this.Get(new Map([["eventID", eventID]])));
+                        return resolve(this.Get(new Map([["eventID", commentID]])));
                     });
             });
         });
     }
 
-    Update(id: string, object: IBaseEvent): Promise<IEvent | null> {
+    Update(id: string, object: IBaseComment): Promise<IComment | null> {
         return new Promise((resolve, reject) => {
             this.mysqlPool.getConnection(async (err, connection) => {
                 if (err) {
                     return reject(err);
                 }
 
-                let location = await EventDatabase.locationDatabase.Get(new Map([["address", object.location.address]]));
 
-                if (location === null) {
-                    location = await EventDatabase.locationDatabase.Create(object.location);
-
-                    if (location === null) {
-                        return reject("Failed to create location");
-                    }
-                }
-
-                connection.query(`UPDATE Event SET name = '${object.name}', description = '${object.description}', locationID = '${location.locationID.toString()}', category = '${object.category}', date = '${object.date}', email = '${object.email}', phone = '${object.phone}', hostID = '${object.hostID.toString()}', hostType = '${object.hostType}' WHERE eventID = '${id}';`,
+                connection.query(`UPDATE Comment SET content = '${object.content}' WHERE commentID = '${id}';`,
                     (err, results) => {
                         connection.release();
 
