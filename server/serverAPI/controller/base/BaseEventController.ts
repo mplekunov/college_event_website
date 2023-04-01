@@ -60,12 +60,14 @@ export default class BaseEventController extends BaseController {
 
             let objects: IBaseEvent[] = [];
 
-            promiseList.forEach(async promise => {
+            for (const promise of promiseList) {
                 let obj = await promise;
+
                 if (obj !== null) {
                     objects.push(obj);
                 }
-            });
+            }
+            
             return objects;
 
         } catch (error) {

@@ -11,6 +11,7 @@ import { resolve } from 'path';
 import { rejects } from 'assert';
 import LocationDatabase from './LocationDatabase';
 import { ObjectId } from 'bson';
+import { HostType } from '../serverAPI/model/internal/host/HostType';
 
 /**
  * UserDatabase is responsible for providing an interface for the end-user filled with methods which allows

@@ -86,7 +86,7 @@ class RSODatabase {
                         return reject(`RSODatabase: ${error}`);
                     }
                     let rsos = [];
-                    results.forEach(async (member) => {
+                    results.forEach((member) => {
                         rsos.push(this.Get(new Map([["rsoID", member.rsoID]])));
                     });
                     return resolve(rsos);

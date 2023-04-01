@@ -11,9 +11,9 @@ import IEvent from "../model/internal/event/IEvent";
 import { RSOMemberType } from "../model/internal/rsoMember/RSOMemberType";
 import BaseRSOController from './base/BaseRSOController';
 import IMember from '../model/internal/member/IMember';
-import UniversityController from './UniversityController';
 import BaseUniversityController from './base/BaseUniversityController';
 import { UserLevel } from "../model/internal/user/UserLevel";
+import { HostType } from "../model/internal/host/HostType";
 import { ObjectId } from 'bson';
 import BaseEventController from "./base/BaseEventController";
 import BaseEventSchema from '../model/internal/event/BaseEventSchema';
@@ -34,11 +34,11 @@ export default class EventController extends BaseEventController {
         this.universityController = universityController;
     }
 
-    protected parseRegisterRequest(req: Request, res: Response): Promise<IBaseEvent> {
+    protected parseRegisterRequest(req: Request, res: Response): Promise<BaseEventSchema> {
         let request = new BaseEventSchema(
             req.body?.name,
             new ObjectId(req.body?.hostID),
-            parseInt(req.body?.hostType),
+            parseInt(req.body?.hostType) as HostType,
             req.body?.category,
             req.body?.description,
             parseInt(req.body?.date),
@@ -51,6 +51,7 @@ export default class EventController extends BaseEventController {
             req.body?.phone
         );
 
+
         return this.verifySchema(request, res);
     }
 
@@ -61,7 +62,7 @@ export default class EventController extends BaseEventController {
      * @param res Response parameter that holds information about response.
      */
     getAll = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["hostID", req.body?.hostID], ["hostType", req.body?.hostType]]);
+        let parameters = new Map<string, any>([["hostID", req.body?.hostID], ["hostType", parseInt(req.body?.hostType)]]);
 
         return this.requestGetAll(parameters, res).then(rso => {
             return this.send(ResponseCodes.OK, res, rso);
@@ -92,11 +93,14 @@ export default class EventController extends BaseEventController {
         try {
             eventCreationSchema = await this.parseRegisterRequest(req, res);
 
-            switch (eventCreationSchema.hostType) {
+            switch (eventCreationSchema.hostType as HostType) {
                 case HostType.PUBLIC:
+                    break;
                 case HostType.UNIVERSITY:
+                    break;
                 case HostType.RSO:
                     let rso = await this.rsoController.requestGet(new Map([["rsoID", eventCreationSchema.hostID]]), res);
+
                     let member = rso.members.find((member: IMember<RSOMemberType>) => member.userID.equals(req.serverUser.userID));
 
                     if (member === undefined) {
@@ -110,7 +114,7 @@ export default class EventController extends BaseEventController {
 
             let event = await this.requestCreate(eventCreationSchema, res);
 
-            this.send(ResponseCodes.BAD_REQUEST, res, event);
+            return this.send(ResponseCodes.BAD_REQUEST, res, event);
         } catch (response) {
             return response;
         }
@@ -130,7 +134,7 @@ export default class EventController extends BaseEventController {
 
             switch (event.hostType) {
                 case HostType.RSO:
-                    let rso = await this.rsoController.requestGet(new Map([["rsoID", event.hostID]]), res); 
+                    let rso = await this.rsoController.requestGet(new Map([["rsoID", event.hostID]]), res);
                     let member = rso.members.find((member: IMember<RSOMemberType>) => member.userID.equals(req.serverUser.userID));
 
                     if (member === undefined) {
@@ -140,7 +144,7 @@ export default class EventController extends BaseEventController {
                     if (member.memberType !== RSOMemberType.ADMIN) {
                         return this.send(ResponseCodes.UNAUTHORIZED, res, "User doesn't have enough permissions.");
                     }
-                    
+
                     break;
                 case HostType.PUBLIC:
                     if (!req.serverUser.userID.equals(event.hostID)) {
@@ -150,14 +154,14 @@ export default class EventController extends BaseEventController {
                     break;
                 case HostType.UNIVERSITY:
                     let university = await this.universityController.requestGet(new Map([["universityID", event.hostID]]), res);
-                    
-                    if (!university.universityID.equals(req.serverUser.universityAffiliation.organizationID) || 
+
+                    if (!university.universityID.equals(req.serverUser.universityAffiliation.organizationID) ||
                         req.serverUser.userLevel !== UserLevel.SUPER_ADMIN) {
-                            return this.send(ResponseCodes.UNAUTHORIZED, res, "User doesn't have enough permissions.");
-                        }
-                    
+                        return this.send(ResponseCodes.UNAUTHORIZED, res, "User doesn't have enough permissions.");
+                    }
+
                     break;
-                    
+
                 default:
                     break;
             }

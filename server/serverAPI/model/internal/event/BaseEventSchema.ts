@@ -3,6 +3,7 @@ import IBaseLocation from "../location/IBaseLocation";
 import { IsEmail, IsInt, IsNotEmpty, IsPhoneNumber, IsPositive, IsString, ValidateNested } from "class-validator";
 import IBaseEvent from './IBaseEvent';
 import { ObjectId } from "bson";
+import { HostType } from "../host/HostType";
 
 export default class BaseEventSchema extends Schema implements IBaseEvent {
     @IsString()
@@ -28,14 +29,11 @@ export default class BaseEventSchema extends Schema implements IBaseEvent {
     @ValidateNested()
     location: IBaseLocation;
 
-    @IsString()
-    @IsNotEmpty()
     @IsEmail()
     email: string;
 
     @IsString()
     @IsNotEmpty()
-    @IsPhoneNumber("US")
     phone: string;
 
     constructor(

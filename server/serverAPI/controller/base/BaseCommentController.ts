@@ -62,12 +62,14 @@ export default class BaseCommentController extends BaseController {
 
             let objects: IComment[] = [];
 
-            promiseList.forEach(async promise => {
+            for (const promise of promiseList) {
                 let obj = await promise;
+
                 if (obj !== null) {
                     objects.push(obj);
                 }
-            });
+            }
+            
             return objects;
 
         } catch (error) {

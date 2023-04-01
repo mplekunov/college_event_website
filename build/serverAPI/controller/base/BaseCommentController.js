@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const ResponseCodes_1 = require("../../../utils/ResponseCodes");
 const BaseController_1 = __importDefault(require("./BaseController"));
-class BaseEventController extends BaseController_1.default {
+class BaseCommentController extends BaseController_1.default {
     database;
     /**
      *
@@ -15,26 +15,26 @@ class BaseEventController extends BaseController_1.default {
         super();
         this.database = database;
     }
-    async requestCreate(event, res) {
-        return this.database.Create(event).then(createdEvent => {
-            if (createdEvent === null) {
-                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Event could not be created."));
+    async requestCreate(comment, res) {
+        return this.database.Create(comment).then(createdComment => {
+            if (createdComment === null) {
+                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Comment could not be created."));
             }
-            return createdEvent;
+            return createdComment;
         }, (error) => Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, this.getException(error))));
     }
-    async requestUpdate(id, event, res) {
-        return this.database.Update(id, event).then(updatedRSO => {
-            if (updatedRSO === null) {
-                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Event could not be updated."));
+    async requestUpdate(id, comment, res) {
+        return this.database.Update(id, comment).then(updatedComment => {
+            if (updatedComment === null) {
+                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Comment could not be updated."));
             }
-            return updatedRSO;
+            return updatedComment;
         }, (error) => Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, this.getException(error))));
     }
     async requestDelete(id, res) {
         return this.database.Delete(id).then(result => {
             if (!result) {
-                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Event could not be deleted."));
+                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Comment could not be deleted."));
             }
             return true;
         }, (error) => Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, this.getException(error))));
@@ -43,7 +43,7 @@ class BaseEventController extends BaseController_1.default {
         try {
             let promiseList = await this.database.GetAll(parameters);
             if (promiseList === null) {
-                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Events could not be found."));
+                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Comments could not be found."));
             }
             let objects = [];
             for (const promise of promiseList) {
@@ -59,13 +59,13 @@ class BaseEventController extends BaseController_1.default {
         }
     }
     async requestGet(parameters, res) {
-        return this.database.Get(parameters).then(async (event) => {
-            if (event === null) {
-                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.NOT_FOUND, res, "Event could not be found."));
+        return this.database.Get(parameters).then(async (comment) => {
+            if (comment === null) {
+                return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.NOT_FOUND, res, "Comment could not be found."));
             }
-            return event;
+            return comment;
         }, (error) => Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, this.getException(error))));
     }
 }
-exports.default = BaseEventController;
-//# sourceMappingURL=BaseEventController.js.map
+exports.default = BaseCommentController;
+//# sourceMappingURL=BaseCommentController.js.map

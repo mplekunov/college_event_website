@@ -91,16 +91,21 @@ class UniversityDatabase {
         };
     }
     async GetAll(parameters) {
-        // await this.mysqlPool.query(`SELECT * FROM User`,  (error, results, fields) => {
-        //     if (error || !Array.isArray(results) || results.length === 0) {
-        //         return Promise.resolve(null);
-        //     }
-        //     let universities: Promise<IUniversity | null>[] = [];
-        //     results.forEach(async (element: any) => universities.push(this.parseUniversity(element)));
-        //     return universities;
-        // });
-        throw Error('Not Implemented');
-        // return Promise.resolve(null);
+        let query = parameters ? this.getSearchQuery(parameters) : "";
+        return new Promise((resolve, reject) => {
+            this.mysqlPool.getConnection((err, connection) => {
+                if (err) {
+                    return reject(err);
+                }
+                connection.query(`SELECT * FROM University WHERE ${query};`, (error, results, fields) => {
+                    connection.release();
+                    if (error || !Array.isArray(results)) {
+                        return resolve(null);
+                    }
+                    return resolve(results.map((result) => this.parseUniversity(result)));
+                });
+            });
+        });
     }
     getSearchQuery(parameters) {
         let query = "";

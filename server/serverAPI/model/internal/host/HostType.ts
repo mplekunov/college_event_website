@@ -1,4 +1,4 @@
-enum HostType {
+export enum HostType {
     PUBLIC,
     RSO,
     UNIVERSITY

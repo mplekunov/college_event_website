@@ -39,7 +39,7 @@ export default class CommentController extends BaseCommentController {
         let request = new BaseCommentSchema(
             req.body?.content,
             req.serverUser.userID,
-            new ObjectId(req.body?.eventID)
+            new ObjectId(req.params?.eventID)
         );
 
         return this.verifySchema(request, res);
@@ -52,7 +52,7 @@ export default class CommentController extends BaseCommentController {
      * @param res Response parameter that holds information about response.
      */
     getAll = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["eventID", req.body?.eventID]]);
+        let parameters = new Map<string, any>([["eventID", req.params?.eventID]]);
 
         return this.requestGetAll(parameters, res).then(rso => {
             return this.send(ResponseCodes.OK, res, rso);
@@ -107,7 +107,7 @@ export default class CommentController extends BaseCommentController {
                 return this.send(ResponseCodes.BAD_REQUEST, res, "Comment doesn't exist.");
             }
 
-            if (comment.userID !== req.serverUser.userID) {
+            if (!comment.userID.equals(req.serverUser.userID)) {
                 return this.send(ResponseCodes.UNAUTHORIZED, res, "You are not authorized to update this comment.");
             }
 
@@ -143,7 +143,7 @@ export default class CommentController extends BaseCommentController {
                 return this.send(ResponseCodes.BAD_REQUEST, res, "Comment doesn't exist.");
             }
 
-            if (comment.userID !== req.serverUser.userID) {
+            if (!comment.userID.equals(req.serverUser.userID)) {
                 return this.send(ResponseCodes.UNAUTHORIZED, res, "You are not authorized to delete this comment.");
             }
 

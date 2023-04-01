@@ -94,14 +94,15 @@ eventRoute.route('/')
     .get(eventController.getAll)
     .post(eventController.create);
 
-eventRoute.route(':eventID')
+eventRoute.route('/:eventID')
     .get(eventController.get)
     .delete(eventController.delete);
 
-eventRoute.route(':eventID/comments')
+eventRoute.route('/:eventID/comments')
     .get(commentController.getAll)
     .post(commentController.create);
 
-eventRoute.route(':eventID/comments/:commentID')
+eventRoute.route('/:eventID/comments/:commentID')
     .get(commentController.get)
+    .post(commentController.update)
     .delete(commentController.delete);
