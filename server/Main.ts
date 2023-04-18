@@ -19,6 +19,7 @@ import { userRoute } from './serverAPI/routes/UserRoutes';
 import { authenticationRoute } from './serverAPI/routes/AuthenticationRoutes';
 import { rsoRoute } from './serverAPI/routes/RSORoutes';
 import { eventRoute } from './serverAPI/routes/EventRoute';
+import { universityRoute } from './serverAPI/routes/UniversityRoutes';
 
 const app = express();
 
@@ -33,6 +34,7 @@ var corsOptions = {
 app.use(cors(corsOptions));
 
 app.use('/users', userRoute);
+app.use('/universities', universityRoute);
 app.use('/auth', authenticationRoute);
 app.use('/rsos', rsoRoute);
 app.use('/events', eventRoute);

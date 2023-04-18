@@ -8,7 +8,6 @@ import BaseRSOController from "./base/BaseRSOController";
 import IRSO from "../model/internal/rso/IRSO";
 import IMember from "../model/internal/member/IMember";
 
-import bson, { ObjectId } from 'bson';
 import BaseUserController from "./base/BaseUserController";
 import { RSOMemberType } from "../model/internal/rsoMember/RSOMemberType";
 import IBaseAffiliate from "../model/internal/affiliate/IBaseAffiliate";
@@ -44,9 +43,11 @@ export default class RSOController extends BaseRSOController {
      * @param res Response parameter that holds information about response.
      */
     getAll = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["universityID", req.serverUser.universityAffiliation.organizationID], ["query", req.body?.query]]);
+        console.log(req.query);
 
-        if (req.body?.userRSOS !== undefined && Boolean(req.body?.userRSOS)) {
+        let parameters = new Map<string, any>([["universityID", req.serverUser.universityAffiliation.organizationID], ["query", req.query?.query]]);
+
+        if (req.query?.userRSOS !== undefined && Boolean(req.query?.userRSOS)) {
             return this.requestGetAll(new Map([["userID", req.serverUser.userID.toString()]]), res).then(rso => {
                 return this.send(ResponseCodes.OK, res, rso);
             }, (response) => response);

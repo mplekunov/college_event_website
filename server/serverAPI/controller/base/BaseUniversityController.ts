@@ -64,14 +64,14 @@ export default class BaseUniversityController extends BaseController {
 
             let objects: IBaseUniversity[] = [];
 
-            promiseList.forEach(async promise => {
+            for (let promise of promiseList) {
                 let obj = await promise;
                 if (obj !== null) {
                     objects.push(obj);
                 }
-            });
-            return objects;
+            }
 
+            return objects;
         } catch (error) {
             return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, this.getException(error)));
         }

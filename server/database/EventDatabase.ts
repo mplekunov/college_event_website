@@ -7,7 +7,7 @@ import IUser from '../serverAPI/model/internal/user/IUser';
 import IDatabase from './IDatabase';
 import IBaseEvent from '../serverAPI/model/internal/event/IBaseEvent';
 import IEvent from '../serverAPI/model/internal/event/IEvent';
-import { resolve } from 'path';
+import { delimiter, resolve } from 'path';
 import { rejects } from 'assert';
 import LocationDatabase from './LocationDatabase';
 import { ObjectId } from 'bson';
@@ -72,11 +72,11 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
         return EventDatabase.instance;
     }
 
-    private getSearchQuery(parameters: Map<String, any>): string {
+    private getSearchQuery(parameters: Map<String, any>, dilimiter: String): string {
         let query = "";
 
-        parameters.forEach((value, key) => query += `${key} = '${value}' AND `);
-        query = query.substring(0, query.length - 5);
+        parameters.forEach((value, key) => query += `${key} = '${value}' ${delimiter} `);
+        query = query.substring(0, query.length - (delimiter.length + 1));
 
         return query;
     }
@@ -109,7 +109,19 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
     }
 
     GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IEvent | null>[] | null> {
-        let query = parameters ? this.getSearchQuery(parameters) : "";
+        let query = "";
+
+        if (parameters?.get("hostType") === HostType.PUBLIC) {
+            query = `hostType = ${HostType.PUBLIC}`;
+        } else if (parameters?.get("hostType") === HostType.UNIVERSITY) {
+            query = `hostType = ${HostType.UNIVERSITY}`;
+        } else if (parameters?.get("hostType") === HostType.RSO) {
+            Array(parameters.get("hostID")).forEach(hostID => {
+                query += `hostID = '${hostID}' OR `;   
+            });
+
+            query = query.substring(0, query.length - 4);
+        }
 
         return new Promise((resolve, rejects) => {
             this.mysqlPool.getConnection((err, connection) => {
@@ -121,7 +133,7 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
                     connection.release();
 
                     if (err || !Array.isArray(results) || results.length === 0) {
-                        return rejects(err);
+                        return resolve([]);
                     }
 
                     let events: Promise<IEvent | null>[] = [];
@@ -137,7 +149,7 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
     }
 
     Get(parameters: Map<String, any>): Promise<IEvent | null> {
-        let query = parameters ? this.getSearchQuery(parameters) : "";
+        let query = parameters.has("eventID") ? `eventID='${parameters.get("eventID")}'` : "";
 
         return new Promise((resolve, rejects) => {
             this.mysqlPool.getConnection((err, connection) => {
@@ -148,7 +160,7 @@ export default class EventDatabase implements IDatabase<IBaseEvent, IEvent> {
                 connection.query(`SELECT * FROM Event WHERE ${query} LIMIT 1;`, (err, results) => {
                     connection.release();
 
-                    if (err || !Array.isArray(results) || results.length === 0) {
+                    if (err) {
                         return rejects(err);
                     }
 

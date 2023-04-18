@@ -52,4 +52,6 @@ exports.userRoute.use(express_1.default.json({ limit: '30mb' }));
 exports.userRoute.route('/')
     .get(userController.get)
     .delete(userController.delete);
+exports.userRoute.route('/:userID')
+    .get(userController.getUser);
 //# sourceMappingURL=UserRoutes.js.map

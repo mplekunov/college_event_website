@@ -29,7 +29,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const mysql_1 = __importDefault(require("mysql"));
+const path_1 = require("path");
 const bson_1 = require("bson");
+const HostType_1 = require("../serverAPI/model/internal/host/HostType");
 /**
  * UserDatabase is responsible for providing an interface for the end-user filled with methods which allows
  * CRUD operations on the User collection.
@@ -70,10 +72,10 @@ class EventDatabase {
         }
         return EventDatabase.instance;
     }
-    getSearchQuery(parameters) {
+    getSearchQuery(parameters, dilimiter) {
         let query = "";
-        parameters.forEach((value, key) => query += `${key} = '${value}' AND `);
-        query = query.substring(0, query.length - 5);
+        parameters.forEach((value, key) => query += `${key} = '${value}' ${path_1.delimiter} `);
+        query = query.substring(0, query.length - (path_1.delimiter.length + 1));
         return query;
     }
     async parseEvent(result) {
@@ -101,7 +103,19 @@ class EventDatabase {
         });
     }
     GetAll(parameters) {
-        let query = parameters ? this.getSearchQuery(parameters) : "";
+        let query = "";
+        if (parameters?.get("hostType") === HostType_1.HostType.PUBLIC) {
+            query = `hostType = ${HostType_1.HostType.PUBLIC}`;
+        }
+        else if (parameters?.get("hostType") === HostType_1.HostType.UNIVERSITY) {
+            query = `hostType = ${HostType_1.HostType.UNIVERSITY}`;
+        }
+        else if (parameters?.get("hostType") === HostType_1.HostType.RSO) {
+            Array(parameters.get("hostID")).forEach(hostID => {
+                query += `hostID = '${hostID}' OR `;
+            });
+            query = query.substring(0, query.length - 4);
+        }
         return new Promise((resolve, rejects) => {
             this.mysqlPool.getConnection((err, connection) => {
                 if (err) {
@@ -110,7 +124,7 @@ class EventDatabase {
                 connection.query(`SELECT * FROM Event WHERE ${query}`, (err, results) => {
                     connection.release();
                     if (err || !Array.isArray(results) || results.length === 0) {
-                        return rejects(err);
+                        return resolve([]);
                     }
                     let events = [];
                     results.forEach((result) => {
@@ -122,7 +136,7 @@ class EventDatabase {
         });
     }
     Get(parameters) {
-        let query = parameters ? this.getSearchQuery(parameters) : "";
+        let query = parameters.has("eventID") ? `eventID='${parameters.get("eventID")}'` : "";
         return new Promise((resolve, rejects) => {
             this.mysqlPool.getConnection((err, connection) => {
                 if (err) {
@@ -130,7 +144,7 @@ class EventDatabase {
                 }
                 connection.query(`SELECT * FROM Event WHERE ${query} LIMIT 1;`, (err, results) => {
                     connection.release();
-                    if (err || !Array.isArray(results) || results.length === 0) {
+                    if (err) {
                         return rejects(err);
                     }
                     return resolve(this.parseEvent(results[0]));

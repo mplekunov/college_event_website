@@ -18,7 +18,6 @@ import IIdentification from '../model/internal/user/IIdentification';
 import UserDatabase from '../../database/UserDatabase';
 import UniversityDatabase from '../../database/UniversityDatabase';
 import LocationDatabase from '../../database/LocationDatabase';
-import RSODatabase from '../../database/RSODatabase';
 
 export const userRoute = express.Router();
 
@@ -56,5 +55,7 @@ userRoute.use(express.json({ limit: '30mb' }));
 
 userRoute.route('/')
     .get(userController.get)
-    .delete(userController.delete)
-    
+    .delete(userController.delete);
+
+userRoute.route('/:userID')
+    .get(userController.getUser);

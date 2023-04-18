@@ -184,12 +184,32 @@ export default class RSODatabase implements IDatabase<IBaseRSO, IRSO> {
         };
     }
 
+
+    
     GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IRSO | null>[]> {
         if (parameters?.has('userID')) {
             return Promise.resolve(this.getUserRSO(new ObjectId(parameters.get('userID'))!));
-        }
+        } else {
+            let query = parameters?.has('query') ? parameters?.get('query') : "";
 
-        throw new Error('Method not implemented.');
+            return new Promise((resolve, reject) => {
+                this.mysqlPool.getConnection((err, connection) => {
+                    if (err) {
+                        return reject(err);
+                    }
+        
+                    connection.query(`SELECT * FROM RSO WHERE name LIKE '%${query}%';`, (error, results, fields) => {
+                        connection.release();
+        
+                        if (error || !Array.isArray(results)) {
+                            return resolve([]);
+                        }
+                        
+                        return resolve(results.map((result: any) => this.parseRSO(result)));
+                    });
+                });
+            });
+        }
     }
 
     Get(parameters: Map<String, any>): Promise<IRSO | null> {

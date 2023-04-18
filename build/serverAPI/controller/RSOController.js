@@ -28,8 +28,9 @@ class RSOController extends BaseRSOController_1.default {
      * @param res Response parameter that holds information about response.
      */
     getAll = async (req, res) => {
-        let parameters = new Map([["universityID", req.serverUser.universityAffiliation.organizationID], ["query", req.body?.query]]);
-        if (req.body?.userRSOS !== undefined && Boolean(req.body?.userRSOS)) {
+        console.log(req.query);
+        let parameters = new Map([["universityID", req.serverUser.universityAffiliation.organizationID], ["query", req.query?.query]]);
+        if (req.query?.userRSOS !== undefined && Boolean(req.query?.userRSOS)) {
             return this.requestGetAll(new Map([["userID", req.serverUser.userID.toString()]]), res).then(rso => {
                 return this.send(ResponseCodes_1.ResponseCodes.OK, res, rso);
             }, (response) => response);

@@ -34,10 +34,36 @@ class EventController extends BaseEventController_1.default {
      * @param res Response parameter that holds information about response.
      */
     getAll = async (req, res) => {
-        let parameters = new Map([["hostID", req.body?.hostID], ["hostType", parseInt(req.body?.hostType)]]);
-        return this.requestGetAll(parameters, res).then(rso => {
-            return this.send(ResponseCodes_1.ResponseCodes.OK, res, rso);
-        }, (response) => response);
+        // HostType
+        /**
+         * Public
+         * RSO
+         * University
+         *
+         * if public => Show all public events
+         *
+         * if University => use universityID of the currently logged in user as hostID and show all University events
+         *
+         * if RSO => use ids of all RSOs that user currently affiliated for hostID parameter and show all RSO events
+         */
+        let parameters = new Map();
+        if (req.query?.hostType !== undefined && parseInt(String(req.query.hostType)) === HostType_1.HostType.PUBLIC) {
+            parameters.set("hostType", HostType_1.HostType.PUBLIC);
+        }
+        else if (req.query?.hostType !== undefined && parseInt(String(req.query.hostType)) === HostType_1.HostType.UNIVERSITY) {
+            parameters.set("hostID", req.serverUser.universityAffiliation.organizationID);
+            parameters.set("hostType", HostType_1.HostType.UNIVERSITY);
+        }
+        else if (req.query?.hostType !== undefined && parseInt(String(req.query.hostType)) === HostType_1.HostType.RSO) {
+            let rsoIDs = req.serverUser.organizationsAffiliation.map((organization) => organization.organizationID);
+            parameters.set("hostID", rsoIDs);
+            parameters.set("hostType", HostType_1.HostType.RSO);
+        }
+        return this.requestGetAll(parameters, res).then(events => {
+            return this.send(ResponseCodes_1.ResponseCodes.OK, res, events);
+        }, (response) => {
+            return response;
+        });
     };
     /**
      * Gets information about RSO at specified rsoID.
@@ -75,7 +101,7 @@ class EventController extends BaseEventController_1.default {
                     break;
             }
             let event = await this.requestCreate(eventCreationSchema, res);
-            return this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, event);
+            return this.send(ResponseCodes_1.ResponseCodes.OK, res, event);
         }
         catch (response) {
             return response;
@@ -103,6 +129,7 @@ class EventController extends BaseEventController_1.default {
                     }
                     break;
                 case HostType_1.HostType.PUBLIC:
+                    console.log(event);
                     if (!req.serverUser.userID.equals(event.hostID)) {
                         return this.send(ResponseCodes_1.ResponseCodes.UNAUTHORIZED, res, "User doesn't have enough permissions.");
                     }

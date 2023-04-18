@@ -27,6 +27,7 @@ import BaseLocationSchema from "../model/internal/location/BaseLocationSchema";
 import UniversityController from "./UniversityController";
 import { ObjectId } from "bson";
 import IBaseAffiliate from "../model/internal/affiliate/IBaseAffiliate";
+import { validate } from 'class-validator';
 
 /**
  * This class creates several properties responsible for authentication actions 
@@ -73,7 +74,7 @@ export default class AuthenticationController extends BaseUserController {
                 parseFloat(req.body?.university?.location?.longitude),
                 parseFloat(req.body?.university?.location?.latitude)
             ),
-            req.body?.university?.numStudents
+            parseInt(req.body?.university?.numStudents)
         );
 
         return this.verifySchema(request, res);
@@ -245,8 +246,12 @@ export default class AuthenticationController extends BaseUserController {
             try {
                 universitySchema = await this.parseUniversityRegisterRequest(req, res);
 
+                console.log(universitySchema);
+
                 university = await this.universityController.requestCreate(universitySchema, res);
             } catch (response) {
+
+                console.log(response);
                 return response;
             }
 

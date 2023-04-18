@@ -18,7 +18,7 @@ import UniversityDatabase from '../../database/UniversityDatabase';
 import LocationDatabase from '../../database/LocationDatabase';
 import UniversityController from '../controller/UniversityController';
 
-export const universityRouter = express.Router();
+export const universityRoute = express.Router();
 
 let databaseURL = process.env.DB_CONNECTION_STRING;
 let databaseName = process.env.DB_NAME;
@@ -50,13 +50,11 @@ const userDatabase = UserDatabase.connect(
 
 const universityController = new UniversityController(universityDatabase);
 
-universityRouter.use(new JWTAuthenticator(userDatabase).authenticate(new TokenCreator<IIdentification>(privateKey)));
+universityRoute.use(express.json({ limit: '30mb' }));
 
-universityRouter.use(express.json({ limit: '30mb' }));
-
-universityRouter.route('/')
+universityRoute.route('/')
     .get(universityController.getAll)
 
-universityRouter.route('/:universityID')
+universityRoute.route('/:universityID')
     .get(universityController.get)
-    .delete(universityController.delete);
+    .delete(new JWTAuthenticator(userDatabase).authenticate(new TokenCreator<IIdentification>(privateKey)), universityController.delete);

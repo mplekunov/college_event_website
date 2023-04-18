@@ -3,7 +3,7 @@ import Schema from '../../Schema';
 import IBaseComment from './IBaseComment';
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export default class BaseCommentSchema extends Schema implements IBaseComment {
+export default class BaseCommentSchema extends Schema {
     @IsString()
     @IsNotEmpty()
     content: string;

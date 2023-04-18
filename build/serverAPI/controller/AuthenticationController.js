@@ -38,7 +38,7 @@ class AuthenticationController extends BaseUserController_1.default {
         ;
     }
     parseUniversityRegisterRequest(req, res) {
-        let request = new BaseUniversitySchema_1.default(req.body?.university?.name, req.body?.university?.description, new BaseLocationSchema_1.default(req.body?.university?.location?.address, parseFloat(req.body?.university?.location?.longitude), parseFloat(req.body?.university?.location?.latitude)), req.body?.university?.numStudents);
+        let request = new BaseUniversitySchema_1.default(req.body?.university?.name, req.body?.university?.description, new BaseLocationSchema_1.default(req.body?.university?.location?.address, parseFloat(req.body?.university?.location?.longitude), parseFloat(req.body?.university?.location?.latitude)), parseInt(req.body?.university?.numStudents));
         return this.verifySchema(request, res);
     }
     parseUniversityRegisterAffiliateRequest(req, res) {
@@ -165,9 +165,11 @@ class AuthenticationController extends BaseUserController_1.default {
             let university;
             try {
                 universitySchema = await this.parseUniversityRegisterRequest(req, res);
+                console.log(universitySchema);
                 university = await this.universityController.requestCreate(universitySchema, res);
             }
             catch (response) {
+                console.log(response);
                 return response;
             }
             universityAffiliate = {

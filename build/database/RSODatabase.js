@@ -164,7 +164,23 @@ class RSODatabase {
         if (parameters?.has('userID')) {
             return Promise.resolve(this.getUserRSO(new bson_1.ObjectId(parameters.get('userID'))));
         }
-        throw new Error('Method not implemented.');
+        else {
+            let query = parameters?.has('query') ? parameters?.get('query') : "";
+            return new Promise((resolve, reject) => {
+                this.mysqlPool.getConnection((err, connection) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    connection.query(`SELECT * FROM RSO WHERE name LIKE '%${query}%';`, (error, results, fields) => {
+                        connection.release();
+                        if (error || !Array.isArray(results)) {
+                            return resolve([]);
+                        }
+                        return resolve(results.map((result) => this.parseRSO(result)));
+                    });
+                });
+            });
+        }
     }
     Get(parameters) {
         let query = this.getSearchQuery(parameters);

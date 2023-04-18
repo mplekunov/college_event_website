@@ -90,10 +90,13 @@ export default class CommentDatabase implements IDatabase<IBaseComment, IComment
     }
 
     private async parseComment(result: any): Promise<IComment> {
+        let username = (await CommentDatabase.UserDatabase.Get(new Map([["userID", result.userID]])))?.username;
+        
         return Promise.resolve({
             eventID: new ObjectId(result.eventID),
             userID: new ObjectId(result.userID),
             commentID: new ObjectId(result.commentID),
+            username: username ? username : "",
             content: result.content
         });
     }
@@ -111,7 +114,7 @@ export default class CommentDatabase implements IDatabase<IBaseComment, IComment
                     connection.release();
 
                     if (err || !Array.isArray(results) || results.length === 0) {
-                        return rejects(err);
+                        return resolve([]);
                     }
 
                     let events: Promise<IComment | null>[] = [];

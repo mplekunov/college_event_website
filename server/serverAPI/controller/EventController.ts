@@ -13,7 +13,7 @@ import BaseRSOController from './base/BaseRSOController';
 import IMember from '../model/internal/member/IMember';
 import BaseUniversityController from './base/BaseUniversityController';
 import { UserLevel } from "../model/internal/user/UserLevel";
-import { HostType } from "../model/internal/host/HostType";
+import { HostType } from '../model/internal/host/HostType';
 import { ObjectId } from 'bson';
 import BaseEventController from "./base/BaseEventController";
 import BaseEventSchema from '../model/internal/event/BaseEventSchema';
@@ -62,11 +62,38 @@ export default class EventController extends BaseEventController {
      * @param res Response parameter that holds information about response.
      */
     getAll = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["hostID", req.body?.hostID], ["hostType", parseInt(req.body?.hostType)]]);
 
-        return this.requestGetAll(parameters, res).then(rso => {
-            return this.send(ResponseCodes.OK, res, rso);
-        }, (response) => response);
+        // HostType
+        /**
+         * Public
+         * RSO
+         * University
+         * 
+         * if public => Show all public events
+         * 
+         * if University => use universityID of the currently logged in user as hostID and show all University events
+         * 
+         * if RSO => use ids of all RSOs that user currently affiliated for hostID parameter and show all RSO events
+         */
+
+        let parameters = new Map<string, any>();
+
+        if (req.query?.hostType !== undefined && (parseInt(String(req.query.hostType)) as HostType) === HostType.PUBLIC) {
+            parameters.set("hostType", HostType.PUBLIC);
+        } else if (req.query?.hostType !== undefined && (parseInt(String(req.query.hostType)) as HostType) === HostType.UNIVERSITY) {
+            parameters.set("hostID", req.serverUser.universityAffiliation.organizationID);
+            parameters.set("hostType", HostType.UNIVERSITY);
+        } else if (req.query?.hostType !== undefined && (parseInt(String(req.query.hostType)) as HostType) === HostType.RSO) {
+            let rsoIDs = req.serverUser.organizationsAffiliation.map((organization) => organization.organizationID);
+            parameters.set("hostID", rsoIDs);
+            parameters.set("hostType", HostType.RSO);
+        }
+
+        return this.requestGetAll(parameters, res).then(events => {
+            return this.send(ResponseCodes.OK, res, events);
+        }, (response) => {
+            return response;
+        });
     }
 
     /**
@@ -114,7 +141,7 @@ export default class EventController extends BaseEventController {
 
             let event = await this.requestCreate(eventCreationSchema, res);
 
-            return this.send(ResponseCodes.BAD_REQUEST, res, event);
+            return this.send(ResponseCodes.OK, res, event);
         } catch (response) {
             return response;
         }
@@ -147,6 +174,7 @@ export default class EventController extends BaseEventController {
 
                     break;
                 case HostType.PUBLIC:
+                    console.log(event);
                     if (!req.serverUser.userID.equals(event.hostID)) {
                         return this.send(ResponseCodes.UNAUTHORIZED, res, "User doesn't have enough permissions.");
                     }
@@ -157,6 +185,7 @@ export default class EventController extends BaseEventController {
 
                     if (!university.universityID.equals(req.serverUser.universityAffiliation.organizationID) ||
                         req.serverUser.userLevel !== UserLevel.SUPER_ADMIN) {
+
                         return this.send(ResponseCodes.UNAUTHORIZED, res, "User doesn't have enough permissions.");
                     }
 

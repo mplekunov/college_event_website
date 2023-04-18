@@ -29,7 +29,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.universityRouter = void 0;
+exports.universityRoute = void 0;
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const express_1 = __importDefault(require("express"));
@@ -39,7 +39,7 @@ const UserDatabase_1 = __importDefault(require("../../database/UserDatabase"));
 const UniversityDatabase_1 = __importDefault(require("../../database/UniversityDatabase"));
 const LocationDatabase_1 = __importDefault(require("../../database/LocationDatabase"));
 const UniversityController_1 = __importDefault(require("../controller/UniversityController"));
-exports.universityRouter = express_1.default.Router();
+exports.universityRoute = express_1.default.Router();
 let databaseURL = process.env.DB_CONNECTION_STRING;
 let databaseName = process.env.DB_NAME;
 let username = process.env.DB_USERNAME;
@@ -48,11 +48,10 @@ let privateKey = process.env.PRIVATE_KEY_FOR_USER_TOKEN;
 const universityDatabase = UniversityDatabase_1.default.connect(databaseURL, databaseName, username, password, LocationDatabase_1.default.connect(databaseURL, databaseName, username, password));
 const userDatabase = UserDatabase_1.default.connect(databaseURL, databaseName, username, password, universityDatabase);
 const universityController = new UniversityController_1.default(universityDatabase);
-exports.universityRouter.use(new JWTAuthenticator_1.default(userDatabase).authenticate(new TokenCreator_1.default(privateKey)));
-exports.universityRouter.use(express_1.default.json({ limit: '30mb' }));
-exports.universityRouter.route('/')
+exports.universityRoute.use(express_1.default.json({ limit: '30mb' }));
+exports.universityRoute.route('/')
     .get(universityController.getAll);
-exports.universityRouter.route('/:universityID')
+exports.universityRoute.route('/:universityID')
     .get(universityController.get)
-    .delete(universityController.delete);
+    .delete(new JWTAuthenticator_1.default(userDatabase).authenticate(new TokenCreator_1.default(privateKey)), universityController.delete);
 //# sourceMappingURL=UniversityRoutes.js.map

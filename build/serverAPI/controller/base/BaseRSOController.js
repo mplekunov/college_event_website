@@ -45,7 +45,6 @@ class BaseRSOController extends BaseController_1.default {
     async requestGetAll(parameters, res) {
         try {
             let promiseList = await this.database.GetAll(parameters);
-            console.log(promiseList);
             if (promiseList === null) {
                 return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "RSO could not be found."));
             }

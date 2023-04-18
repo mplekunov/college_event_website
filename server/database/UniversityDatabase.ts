@@ -93,7 +93,7 @@ export default class UniversityDatabase implements IDatabase<IBaseUniversity, IU
     }
     
     async GetAll(parameters?: Map<String, any> | undefined): Promise<Promise<IUniversity | null>[] | null> {
-        let query = parameters ? this.getSearchQuery(parameters) : "";
+        let query = parameters?.has('query') ? parameters?.get('query') : "";
 
         return new Promise((resolve, reject) => {
             this.mysqlPool.getConnection((err, connection) => {
@@ -101,7 +101,7 @@ export default class UniversityDatabase implements IDatabase<IBaseUniversity, IU
                     return reject(err);
                 }
     
-                connection.query(`SELECT * FROM University WHERE ${query};`, (error, results, fields) => {
+                connection.query(`SELECT * FROM University WHERE name LIKE '%${query}%';`, (error, results, fields) => {
                     connection.release();
     
                     if (error || !Array.isArray(results)) {

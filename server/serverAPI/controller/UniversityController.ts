@@ -25,10 +25,10 @@ export default class UniversityController extends BaseUniversityController {
      * @param res Response parameter that holds information about response.
      */
     getAll = async (req: Request, res: Response) => {
-        let parameters = new Map<string, any>([["query", req.body?.query]]);
+        let parameters = new Map<string, any>([["query", req.query?.query]]);
 
-        return this.requestGetAll(parameters, res).then(rso => {
-            return this.send(ResponseCodes.OK, res, rso);
+        return this.requestGetAll(parameters, res).then(universities => {
+            return this.send(ResponseCodes.OK, res, universities);
         }, (response) => response);
     }
 
@@ -41,12 +41,13 @@ export default class UniversityController extends BaseUniversityController {
     get = async (req: Request, res: Response) => {
         let parameters = new Map<string, any>([["universityID", req.params?.universityID]]);
 
+        console.log(parameters);
         try {
             let university = await this.requestGet(parameters, res);
 
-            if (req.serverUser.userLevel !== UserLevel.ADMIN && req.serverUser.universityAffiliation.organizationName !== university.name) {
-                return this.send(ResponseCodes.UNAUTHORIZED, res, "You are not authorized to perform this action.");
-            }
+            // if (req.serverUser.userLevel !== UserLevel.ADMIN && req.serverUser.universityAffiliation.organizationName !== university.name) {
+            //     return this.send(ResponseCodes.UNAUTHORIZED, res, "You are not authorized to perform this action.");
+            // }
 
             return this.send(ResponseCodes.OK, res, university);
         } catch (response) {

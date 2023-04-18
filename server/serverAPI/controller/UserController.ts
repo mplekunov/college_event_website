@@ -34,6 +34,14 @@ export default class UserController extends BaseUserController {
         }, (response) => response);
     }
 
+    getUser = async (req: Request, res: Response) => {
+        let parameters = new Map<string, any>([["userID", req.params.userID]]);
+
+        return this.requestGet(parameters, res).then(user => {
+            return this.send(ResponseCodes.OK, res, this.convertToUserResponse(user));
+        }, (response) => response);
+    }
+
     /**
      * Deletes user object at specified userID.
      * 

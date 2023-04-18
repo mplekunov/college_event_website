@@ -26,6 +26,12 @@ class UserController extends BaseUserController_1.default {
             return this.send(ResponseCodes_1.ResponseCodes.OK, res, this.convertToUserResponse(user));
         }, (response) => response);
     };
+    getUser = async (req, res) => {
+        let parameters = new Map([["userID", req.params.userID]]);
+        return this.requestGet(parameters, res).then(user => {
+            return this.send(ResponseCodes_1.ResponseCodes.OK, res, this.convertToUserResponse(user));
+        }, (response) => response);
+    };
     /**
      * Deletes user object at specified userID.
      *

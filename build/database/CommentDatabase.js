@@ -79,10 +79,12 @@ class CommentDatabase {
         return query;
     }
     async parseComment(result) {
+        let username = (await CommentDatabase.UserDatabase.Get(new Map([["userID", result.userID]])))?.username;
         return Promise.resolve({
             eventID: new bson_1.ObjectId(result.eventID),
             userID: new bson_1.ObjectId(result.userID),
             commentID: new bson_1.ObjectId(result.commentID),
+            username: username ? username : "",
             content: result.content
         });
     }
@@ -96,7 +98,7 @@ class CommentDatabase {
                 connection.query(`SELECT * FROM Comment WHERE ${query}`, (err, results) => {
                     connection.release();
                     if (err || !Array.isArray(results) || results.length === 0) {
-                        return rejects(err);
+                        return resolve([]);
                     }
                     let events = [];
                     results.forEach((result) => {

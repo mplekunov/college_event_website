@@ -42,6 +42,7 @@ const UserRoutes_1 = require("./serverAPI/routes/UserRoutes");
 const AuthenticationRoutes_1 = require("./serverAPI/routes/AuthenticationRoutes");
 const RSORoutes_1 = require("./serverAPI/routes/RSORoutes");
 const EventRoute_1 = require("./serverAPI/routes/EventRoute");
+const UniversityRoutes_1 = require("./serverAPI/routes/UniversityRoutes");
 const app = (0, express_1.default)();
 exports.app = app;
 app.use(Logger_1.default.consoleLog);
@@ -51,6 +52,7 @@ var corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use('/users', UserRoutes_1.userRoute);
+app.use('/universities', UniversityRoutes_1.universityRoute);
 app.use('/auth', AuthenticationRoutes_1.authenticationRoute);
 app.use('/rsos', RSORoutes_1.rsoRoute);
 app.use('/events', EventRoute_1.eventRoute);

@@ -49,12 +49,12 @@ class BaseUniversityController extends BaseController_1.default {
                 return Promise.reject(this.send(ResponseCodes_1.ResponseCodes.BAD_REQUEST, res, "Universities could not be found."));
             }
             let objects = [];
-            promiseList.forEach(async (promise) => {
+            for (let promise of promiseList) {
                 let obj = await promise;
                 if (obj !== null) {
                     objects.push(obj);
                 }
-            });
+            }
             return objects;
         }
         catch (error) {

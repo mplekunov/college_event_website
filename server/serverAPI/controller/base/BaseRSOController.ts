@@ -58,8 +58,6 @@ export default class BaseRSOController extends BaseController {
         try {
             let promiseList: Promise<IRSO | null>[] | null = await this.database.GetAll(parameters);
 
-            console.log(promiseList);
-
             if (promiseList === null) {
                 return Promise.reject(this.send(ResponseCodes.BAD_REQUEST, res, "RSO could not be found."));
             }
