@@ -1,1 +1,0 @@
-{"version":3,"file":"UserToken.js","sourceRoot":"","sources":["../../../../../server/serverAPI/model/internal/userToken/UserToken.ts"],"names":[],"mappings":";;AAEA,MAAqB,SAAS;IAC1B,WAAW,CAAQ;IACnB,YAAY,CAAQ;IAEpB,YAAY,WAAkB,EAAE,YAAmB;QAC/C,IAAI,CAAC,WAAW,GAAG,WAAW,CAAC;QAC/B,IAAI,CAAC,YAAY,GAAG,YAAY,CAAC;IACrC,CAAC;CACJ;AARD,4BAQC"}

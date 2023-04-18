@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Welcome</title>
+	<link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+	<script type="module" src="js/index.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBsw9ec5b8mLu-wvE4HUkfDa0wr0On0N8s"></script>
+	<script async defer
+		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBsw9ec5b8mLu-wvE4HUkfDa0wr0On0N8s&callback=initMap"></script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.dots.min.js"></script>
+
+	<div id="vanta-bg"></div>
+
+	<script>
+		VANTA.DOTS({
+			el: "#vanta-bg",
+			mouseControls: true,
+			touchControls: true,
+			gyroControls: false,
+			minHeight: 200.00,
+			minWidth: 200.00,
+			scale: 1.00,
+			scaleMobile: 1.00,
+			showLines: false
+		});
+	</script>
+
+	<div class="login-container">
+		<h2>Login</h2>
+
+		<label for="username">Username</label>
+		<input autocomplete="off" type="text" id="login_username" name="username" placeholder="Enter your username">
+
+		<label for="password">Password</label>
+		<input autocomplete="off" type="password" id="login_password" name="password" placeholder="Enter your password">
+
+
+		<button class="button" id="login_login_btn">Login</button>
+		<p>Don't have an account? <a href="#" id="login_register_btn">Register</a></p>
+	</div>
+
+	<div class="register-container" style="display: none;">
+		<h2>Register</h2>
+
+		<label for="first-name">First Name</label>
+		<input autocomplete="off" type="text" id="register_first_name" name="first-name" required>
+
+		<label for="last-name">Last Name</label>
+		<input autocomplete="off" type="text" id="register_last_name" name="last-name" required>
+
+		<label for="email">Email</label>
+		<input autocomplete="off" type="email" id="register_email" name="email" required>
+
+		<label for="username">Username</label>
+		<input autocomplete="off" type="text" id="register_username" name="username" required>
+
+		<label for="password">Password</label>
+		<input autocomplete="off" type="password" id="register_password" name="password" required>
+
+		<label for="user-type">User Type</label>
+		<select id="register_user_type" name="user-type" onchange="showFields()">
+			<option value="">Select User Type</option>
+			<option value="student">Student</option>
+			<option value="university-staff">University Staff</option>
+		</select>
+
+		<div id="register_university_search" style="display: none;">
+			<label for="university-search-bar">Univesity Search</label>
+			<input type="text" id="register_university_search_bar" name="university-search-bar">
+			<div id="register_university_search_results" style="display: none;"></div>
+		</div>
+
+		<div id="register_university_info" style="display: none;">
+			<label for="university-name">University Name</label>
+			<input autocomplete="off" type="text" id="register_university_name" name="university-name">
+
+			<label for="university-description">University Description</label>
+			<textarea autocomplete="off" id="register_university_description" name="university-description" maxlength="500"></textarea>
+
+			<label for="num-students">Number of Students</label>
+			<input autocomplete="off" type="text" id="register_num_students" name="num-students">
+
+			<label for="location">Location:</label>
+			<!-- Placeholder for location input using Google Maps -->
+			<input autocomplete="off" type="text" id="register_location" name="location">
+			<div id="register_location_map"></div>
+		</div>
+		<div style="display: flex;">
+			<button class="button" id="register_back_btn">Back</button>
+			<button class="button" id="register_register_btn">Register</button>
+		</div>
+	</div>
+</body>
+
+</html>

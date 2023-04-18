@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Main Page</title>
+	<link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.dots.min.js"></script>
+
+	<script type="module" src="js/main.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBsw9ec5b8mLu-wvE4HUkfDa0wr0On0N8s"></script>
+	<script async defer
+		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBsw9ec5b8mLu-wvE4HUkfDa0wr0On0N8s&callback=initMap"></script>
+
+	<script>
+		// Load the Google Maps API
+		function initMap() {
+			// Create a new map object and set the center to a default location
+			var map = new google.maps.Map(document.getElementById('create_new_event_location_map'), {
+				center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
+				zoom: 8 // Set the initial zoom level
+			});
+
+			// Create a new marker object
+			var marker = new google.maps.Marker({
+				map: map,
+				position: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
+				draggable: true // Allow the user to drag the marker
+			});
+
+			// Add an event listener to the marker for when it is dragged
+			marker.addListener('dragend', function () {
+				// Get the updated position of the marker
+				var position = marker.getPosition();
+
+				// Update the input field with the new location
+				document.getElementById('create_new_event_location').value = position.lat() + ', ' + position.lng();
+			});
+		}
+	</script>
+
+	<div id="vanta-bg"></div>
+
+	<script>
+		VANTA.DOTS({
+			el: "#vanta-bg",
+			mouseControls: true,
+			touchControls: true,
+			gyroControls: false,
+			minHeight: 200.00,
+			minWidth: 200.00,
+			scale: 1.00,
+			scaleMobile: 1.00,
+			showLines: false
+		});
+	</script>
+
+	<div id="menu-bar">
+		<ul>
+			<li><a href="#events">Events</a></li>
+			<li><a href="#rso">RSO</a></li>
+			<li><a href="#profile">Profile</a></li>
+		</ul>
+	</div>
+	<div id="content">
+		<!-- Placeholder content for each tab -->
+		<div id="events" style="display: none;">
+			<!-- Create New Event Popup -->
+
+			<div id="new_event_popup" class="popup">
+				<div class="popup-content">
+					<button id="create_new_event_close" class="close-button">Close</button>
+
+					<h2>Create Event</h2>
+					<label for="name">Name:</label>
+					<input type="text" id="create_new_event_name" name="name" required>
+
+					<label for="type">Type:</label>
+					<select id="create_new_event_type_select" name="type" required>
+						<option value="">Select a type</option>
+						<option value="public">Public</option>
+						<option value="university">University</option>
+						<option value="rso">RSO</option>
+					</select>
+
+					<div id="create_new_event_rso_select_container" style="display: none;"></div>
+
+					<label for="category">Category:</label>
+					<input type="text" id="create_new_event_category" name="category">
+
+					<label for="description">Description:</label>
+					<textarea id="create_new_event_description" name="description" rows="4"></textarea>
+
+					<label for="date">Date:</label>
+					<input type="date" id="create_new_event_date" name="date" required>
+
+					<label for="email">Email:</label>
+					<input type="email" id="create_new_event_email" name="email" required>
+
+					<label for="phone">Phone:</label>
+					<input type="phone" id="create_new_event_phone" name="phone" required>
+
+					<label for="location">Location:</label>
+					<input type="text" id="create_new_event_location" name="location">
+
+					<div id="create_new_event_location_map"></div>
+
+					<button id="create_new_event_create">Create Event</button>
+				</div>
+			</div>
+
+			<!-- Event Popup -->
+			<div id="event_popup" class="popup">
+				<div class="popup-content">
+					<button id="delete_event_popup" class="delete-button">Delete</button>
+					<button id="close_event_popup" class="close-button">Close</button>
+
+					<h2 id="event_name">Name</h2>
+					<p id="event_type">Type</p>
+					<p id="event_date">Date</p>
+					<p id="event_category">Category</p>
+					<p id="event_description">Description</p>
+					<p id="event_email">Email</p>
+					<p id="event_phone">Phone</p>
+					<p id="event_location">Location</p>
+
+					<div id="comment-container" class="comments-section"></div>
+					<div class="add-comment-section">
+						<h3>Add a Comment:</h3>
+
+						<div class="comment-input">
+							<textarea id="comment"></textarea>
+							<button id="send_comment_btn" class="send-comment-button">Send</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="search-bar">
+				<div class="custom-dropdown">
+					<button class="custom-dropdown-button">Select event type</button>
+					<div class="custom-dropdown-menu">
+						<div class="custom-dropdown-option" data-value="public">Public</div>
+						<div class="custom-dropdown-option" data-value="university">University</div>
+						<div class="custom-dropdown-option" data-value="rso">RSO</div>
+
+					</div>
+				</div>
+				<button id="create_new_event_btn" class="button">Create New</button>
+			</div>
+
+			<div id="event_list" style="display: none;"></div>
+		</div>
+
+		<div id="rso" style="display: none;">
+			<div class="search-container">
+				<input type="text" id="rso-search-bar" placeholder="Search RSOs">
+				<button id="create-new-button" class="button">Create New</button>
+			</div>
+
+			<div id="rso_list" style="display: none;"></div>
+
+			<!-- RSO Popup -->
+			<div id="rso_item_popup" class="popup">
+				<div class="popup-content">
+					<button id="delete_rso_popup" class="delete-button">Delete</button>
+					<button id="close_rso_popup" class="close-button">Close</button>
+
+					<h2 id="rso_name">Name</h2>
+					<p id="rso_description">Description</p>
+
+					<div id="rso_members" class="members-section">
+						<h4>Members:</h4>
+						<ul id="rso_members_list"></ul>
+					</div>
+				</div>
+			</div>
+
+			<div class="popup" id="rso_popup">
+				<div class="popup-content">
+					<button id="close_rso_create_popup" class="close-button">Close</button>
+
+					<h2>Create RSO</h2>
+					<label for="rso-name">Name:</label>
+					<input type="text" id="rso-name">
+					<label for="rso-description">Description:</label>
+					<textarea id="rso-description"></textarea>
+
+					<div class="members-section">
+						<h4>Members:</h4>
+						<input type="text" id="member-id" placeholder="Member ID">
+						<button id="add-member">Add Member</button>
+						<ul id="members-list"></ul>
+					</div>
+
+					<button id="create-rso">Create RSO</button>
+				</div>
+			</div>
+		</div>
+		<div id="profile" style="display: none;">Profile tab content</div>
+	</div>
+	<!-- </div> -->
+</body>
+
+</html>
